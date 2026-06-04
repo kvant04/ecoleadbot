@@ -1,0 +1,15 @@
+# Логи локального dev-сервера
+serve.out.log
+serve.err.log
+*.log
+
+# Настройки редактора
+.vscode/
+
+# Системные файлы ОС
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Временные файлы
+*.tmp

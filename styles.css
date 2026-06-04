@@ -1,0 +1,442 @@
+/* =========================================================================
+   EcoLeadBot — styles
+   Все стили виджета изолированы префиксом .ecoleadbot- (Frontend Spec §42).
+   Стиль: clean / modern B2B, спокойные цвета, контрастные CTA (UX §19).
+   Mobile-first (UX §16).
+   ========================================================================= */
+
+/* -------------------------------------------------------------------------
+   Демо-страница-хост (не часть виджета)
+   ------------------------------------------------------------------------- */
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: #1f2933;
+  background: #f5f7fa;
+  line-height: 1.6;
+}
+
+.site-header {
+  background: #ffffff;
+  border-bottom: 1px solid #e4e9f0;
+}
+.site-header__inner,
+.site-footer__inner {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 16px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.site-logo { font-weight: 700; color: #2f855a; }
+.site-nav a { margin-left: 16px; color: #52606d; text-decoration: none; font-size: 14px; }
+.site-nav a:hover { color: #2f855a; }
+
+.site-main { max-width: 820px; margin: 0 auto; padding: 32px 20px 80px; }
+.article-content h1 { font-size: 28px; line-height: 1.25; margin: 0 0 16px; }
+.article-content h2 { font-size: 21px; margin: 32px 0 12px; }
+.article-lead { font-size: 18px; color: #3e4c59; }
+.article-content p { margin: 0 0 16px; }
+
+.site-footer { background: #ffffff; border-top: 1px solid #e4e9f0; }
+.site-footer__inner { font-size: 13px; color: #7b8794; }
+.site-footer__inner a { color: #7b8794; }
+
+/* =========================================================================
+   ПЕРЕМЕННЫЕ ВИДЖЕТА
+   ========================================================================= */
+.ecoleadbot-root {
+  --eco-primary: #2f855a;
+  --eco-primary-hover: #276749;
+  --eco-accent: #dd6b20;
+  --eco-accent-hover: #c05621;
+  --eco-text: #1f2933;
+  --eco-text-muted: #6b7785;
+  --eco-border: #d9e2ec;
+  --eco-bg: #ffffff;
+  --eco-bg-soft: #f0f4f8;
+  --eco-overlay: rgba(15, 30, 25, 0.55);
+  --eco-radius: 14px;
+  --eco-radius-sm: 10px;
+  --eco-shadow: 0 18px 50px rgba(15, 30, 25, 0.22);
+  --eco-transition: 200ms ease;
+
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: var(--eco-text);
+  line-height: 1.5;
+}
+
+.ecoleadbot-root *,
+.ecoleadbot-root *::before,
+.ecoleadbot-root *::after { box-sizing: border-box; }
+
+.ecoleadbot-hidden { display: none !important; }
+
+/* =========================================================================
+   FLOATING WIDGET (UX §4.1 / Frontend §8)
+   ========================================================================= */
+.ecoleadbot-widget {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 2147483000;
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  max-width: 280px;
+  padding: 14px 18px;
+  border: none;
+  border-radius: 999px;
+  background: var(--eco-primary);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--eco-shadow);
+  transition: transform var(--eco-transition), background var(--eco-transition);
+}
+.ecoleadbot-widget:hover { background: var(--eco-primary-hover); transform: translateY(-2px); }
+.ecoleadbot-widget__icon { font-size: 18px; line-height: 1; }
+
+/* =========================================================================
+   INLINE CTA (UX §4.2 / Frontend §11)
+   ========================================================================= */
+.ecoleadbot-inline-cta {
+  margin: 28px 0;
+  padding: 20px 22px;
+  border: 1px solid var(--eco-border);
+  border-left: 4px solid var(--eco-accent);
+  border-radius: var(--eco-radius);
+  background: var(--eco-bg);
+  box-shadow: 0 6px 18px rgba(15, 30, 25, 0.06);
+}
+.ecoleadbot-inline-cta__title { font-weight: 700; margin: 0 0 8px; font-size: 17px; }
+.ecoleadbot-inline-cta__list { margin: 0 0 16px; padding-left: 18px; color: var(--eco-text-muted); }
+.ecoleadbot-inline-cta__list li { margin: 2px 0; }
+.ecoleadbot-inline-cta__btn {
+  display: inline-block;
+  padding: 12px 22px;
+  border: none;
+  border-radius: var(--eco-radius-sm);
+  background: var(--eco-accent);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--eco-transition);
+}
+.ecoleadbot-inline-cta__btn:hover { background: var(--eco-accent-hover); }
+
+/* =========================================================================
+   POPUP CONTAINER (UX §5 / Frontend §10)
+   Desktop: centered popup + backdrop. Mobile: fullscreen overlay.
+   ========================================================================= */
+.ecoleadbot-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  background: var(--eco-overlay);
+  opacity: 0;
+  transition: opacity var(--eco-transition);
+}
+.ecoleadbot-overlay.is-visible { opacity: 1; }
+
+.ecoleadbot-popup {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 480px;
+  max-height: calc(100vh - 48px);
+  background: var(--eco-bg);
+  border-radius: var(--eco-radius);
+  box-shadow: var(--eco-shadow);
+  overflow: hidden;
+  transform: translateY(12px);
+  transition: transform var(--eco-transition);
+}
+.ecoleadbot-overlay.is-visible .ecoleadbot-popup { transform: translateY(0); }
+
+.ecoleadbot-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  width: 36px;
+  height: 36px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--eco-text);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  transition: background var(--eco-transition);
+}
+.ecoleadbot-close:hover { background: var(--eco-bg-soft); }
+
+/* Progress bar (UX §8) */
+.ecoleadbot-progress {
+  flex: 0 0 auto;
+  padding: 18px 24px 0;
+}
+.ecoleadbot-progress__track {
+  height: 6px;
+  border-radius: 999px;
+  background: var(--eco-bg-soft);
+  overflow: hidden;
+}
+.ecoleadbot-progress__fill {
+  height: 100%;
+  width: 0;
+  border-radius: 999px;
+  background: var(--eco-primary);
+  transition: width var(--eco-transition);
+}
+.ecoleadbot-progress__meta {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 8px;
+  font-size: 12px;
+  color: var(--eco-text-muted);
+}
+
+/* Scrollable screen area */
+.ecoleadbot-body {
+  flex: 1 1 auto;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 22px 24px 24px;
+}
+
+.ecoleadbot-screen { animation: ecoleadbot-fade 200ms ease; }
+@keyframes ecoleadbot-fade {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.ecoleadbot-title { font-size: 21px; font-weight: 700; margin: 0 0 8px; }
+.ecoleadbot-subtitle { font-size: 15px; color: var(--eco-text-muted); margin: 0 0 18px; }
+.ecoleadbot-hint { font-size: 13px; color: var(--eco-text-muted); margin: 6px 0 0; }
+
+/* Card-buttons (UX §3) */
+.ecoleadbot-options { display: flex; flex-direction: column; gap: 10px; margin: 0 0 16px; }
+.ecoleadbot-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 15px 16px;
+  border: 1px solid var(--eco-border);
+  border-radius: var(--eco-radius-sm);
+  background: var(--eco-bg);
+  color: var(--eco-text);
+  font-size: 16px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--eco-transition), background var(--eco-transition), box-shadow var(--eco-transition);
+}
+.ecoleadbot-card:hover { border-color: var(--eco-primary); background: var(--eco-bg-soft); }
+.ecoleadbot-card.is-selected {
+  border-color: var(--eco-primary);
+  background: #ebf7f0;
+  box-shadow: inset 0 0 0 1px var(--eco-primary);
+}
+.ecoleadbot-card__check {
+  flex: 0 0 auto;
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--eco-border);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  color: #fff;
+}
+.ecoleadbot-card.is-selected .ecoleadbot-card__check {
+  background: var(--eco-primary);
+  border-color: var(--eco-primary);
+}
+
+/* Buttons */
+.ecoleadbot-actions { display: flex; gap: 10px; margin-top: 8px; }
+.ecoleadbot-btn {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 14px 20px;
+  border: none;
+  border-radius: var(--eco-radius-sm);
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--eco-transition), opacity var(--eco-transition);
+}
+.ecoleadbot-btn--primary { background: var(--eco-accent); color: #fff; flex: 1 1 auto; }
+.ecoleadbot-btn--primary:hover { background: var(--eco-accent-hover); }
+.ecoleadbot-btn--secondary { background: var(--eco-bg-soft); color: var(--eco-text); }
+.ecoleadbot-btn--secondary:hover { background: #e2e9f0; }
+.ecoleadbot-btn--ghost { background: transparent; color: var(--eco-primary); padding: 10px 14px; }
+.ecoleadbot-btn--block { width: 100%; }
+.ecoleadbot-btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.ecoleadbot-back {
+  background: none;
+  border: none;
+  color: var(--eco-text-muted);
+  font-size: 14px;
+  cursor: pointer;
+  padding: 6px 0;
+  margin-bottom: 6px;
+}
+.ecoleadbot-back:hover { color: var(--eco-text); }
+
+/* Intro screen */
+.ecoleadbot-intro__list { margin: 0 0 20px; padding-left: 18px; color: var(--eco-text-muted); }
+.ecoleadbot-intro__actions { display: flex; flex-direction: column; gap: 10px; }
+
+/* Mini result */
+.ecoleadbot-result {
+  padding: 16px 18px;
+  border-radius: var(--eco-radius-sm);
+  background: var(--eco-bg-soft);
+  margin-bottom: 18px;
+}
+.ecoleadbot-result__list { margin: 8px 0 0; padding-left: 18px; }
+
+/* Contact form */
+.ecoleadbot-field { margin-bottom: 14px; }
+.ecoleadbot-label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; }
+.ecoleadbot-label__opt { font-weight: 400; color: var(--eco-text-muted); }
+.ecoleadbot-input,
+.ecoleadbot-textarea {
+  width: 100%;
+  padding: 13px 14px;
+  border: 1px solid var(--eco-border);
+  border-radius: var(--eco-radius-sm);
+  font-size: 16px; /* >=16px чтобы iOS не зумил (Accessibility §40) */
+  font-family: inherit;
+  color: var(--eco-text);
+  background: var(--eco-bg);
+}
+.ecoleadbot-input:focus,
+.ecoleadbot-textarea:focus { outline: none; border-color: var(--eco-primary); box-shadow: 0 0 0 3px rgba(47, 133, 90, 0.15); }
+.ecoleadbot-textarea { min-height: 80px; resize: vertical; }
+.ecoleadbot-input.is-error,
+.ecoleadbot-textarea.is-error { border-color: #e53e3e; }
+.ecoleadbot-error { color: #e53e3e; font-size: 13px; margin: 6px 0 0; }
+
+.ecoleadbot-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  font-size: 14px;
+  cursor: pointer;
+  margin: 6px 0 14px;
+}
+.ecoleadbot-checkbox input { width: 18px; height: 18px; margin-top: 1px; flex: 0 0 auto; }
+
+.ecoleadbot-consent { font-size: 12px; color: var(--eco-text-muted); margin: 14px 0; }
+
+/* Choice chips (preferred contact when do_not_call) */
+.ecoleadbot-chips { display: flex; gap: 10px; margin-top: 8px; }
+.ecoleadbot-chip {
+  flex: 1 1 auto;
+  padding: 12px;
+  border: 1px solid var(--eco-border);
+  border-radius: var(--eco-radius-sm);
+  background: var(--eco-bg);
+  font-size: 15px;
+  cursor: pointer;
+  transition: border-color var(--eco-transition), background var(--eco-transition);
+}
+.ecoleadbot-chip.is-selected { border-color: var(--eco-primary); background: #ebf7f0; }
+
+/* Loading */
+.ecoleadbot-loading { text-align: center; padding: 40px 10px; }
+.ecoleadbot-spinner {
+  width: 44px;
+  height: 44px;
+  margin: 0 auto 18px;
+  border: 4px solid var(--eco-bg-soft);
+  border-top-color: var(--eco-primary);
+  border-radius: 50%;
+  animation: ecoleadbot-spin 800ms linear infinite;
+}
+@keyframes ecoleadbot-spin { to { transform: rotate(360deg); } }
+
+/* Final / success */
+.ecoleadbot-final { text-align: center; }
+.ecoleadbot-final__icon {
+  width: 64px;
+  height: 64px;
+  margin: 4px auto 16px;
+  border-radius: 50%;
+  background: #ebf7f0;
+  color: var(--eco-primary);
+  font-size: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.ecoleadbot-media { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 22px; }
+.ecoleadbot-media a {
+  flex: 0 0 auto;
+  padding: 10px 16px;
+  border: 1px solid var(--eco-border);
+  border-radius: 999px;
+  font-size: 14px;
+  text-decoration: none;
+  color: var(--eco-text);
+  transition: border-color var(--eco-transition), background var(--eco-transition);
+}
+.ecoleadbot-media a:hover { border-color: var(--eco-primary); background: var(--eco-bg-soft); }
+
+/* Error screen */
+.ecoleadbot-state { text-align: center; padding: 20px 6px; }
+.ecoleadbot-state__icon { font-size: 40px; margin-bottom: 12px; }
+
+/* =========================================================================
+   MOBILE: fullscreen overlay, sticky CTA, vertical layout (UX §16 / Frontend §39)
+   ========================================================================= */
+@media (max-width: 767px) {
+  .ecoleadbot-widget { right: 14px; bottom: 14px; padding: 12px 16px; font-size: 14px; }
+
+  .ecoleadbot-overlay { padding: 0; align-items: stretch; }
+  .ecoleadbot-popup {
+    max-width: 100%;
+    width: 100%;
+    height: 100%;
+    max-height: 100%;
+    border-radius: 0;
+    transform: translateY(0);
+  }
+  .ecoleadbot-title { font-size: 20px; }
+  .ecoleadbot-card { padding: 16px; font-size: 16px; }
+
+  /* sticky CTA на мобильных для multi/contact/intro */
+  .ecoleadbot-actions--sticky {
+    position: sticky;
+    bottom: 0;
+    margin: 12px -24px -24px;
+    padding: 14px 24px calc(14px + env(safe-area-inset-bottom));
+    background: var(--eco-bg);
+    border-top: 1px solid var(--eco-border);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ecoleadbot-root *, .ecoleadbot-overlay, .ecoleadbot-popup { transition: none !important; animation: none !important; }
+}
