@@ -316,6 +316,29 @@ body {
 }
 .ecoleadbot-result__list { margin: 8px 0 0; padding-left: 18px; }
 
+/* RAG answer */
+.ecoleadbot-rag-input { min-height: 120px; }
+.ecoleadbot-rag-answer {
+  padding: 16px 18px;
+  border-radius: var(--eco-radius-sm);
+  background: var(--eco-bg-soft);
+  margin-bottom: 16px;
+  white-space: pre-wrap;
+  line-height: 1.5;
+  font-size: 15px;
+}
+.ecoleadbot-rag-sources {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border-left: 3px solid var(--eco-primary);
+  background: #f8fafc;
+  border-radius: 0 var(--eco-radius-sm) var(--eco-radius-sm) 0;
+}
+.ecoleadbot-rag-sources__title { font-size: 13px; font-weight: 700; margin-bottom: 6px; color: var(--eco-text-muted); }
+.ecoleadbot-rag-sources__list { margin: 0; padding-left: 18px; font-size: 14px; color: var(--eco-text-muted); }
+.ecoleadbot-rag-sources__list li { margin: 4px 0; }
+.ecoleadbot-rag-feedback { margin-top: 4px; margin-bottom: 12px !important; }
+
 /* Contact form */
 .ecoleadbot-field { margin-bottom: 14px; }
 .ecoleadbot-label { display: block; font-size: 14px; font-weight: 600; margin-bottom: 6px; }

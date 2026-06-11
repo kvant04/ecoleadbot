@@ -1,0 +1,13 @@
+.env
+.git
+__pycache__
+*.pyc
+*.log
+dev documentation/
+raw/
+reports/
+future_extension/
+evaluation_results.json
+evaluation_results.md
+terminals/
+.vscode/

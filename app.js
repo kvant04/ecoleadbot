@@ -17,6 +17,7 @@
      ----------------------------------------------------------------------- */
   var ECOLEADBOT_CONFIG = {
     webhookUrl: "https://n8n.ecolusspb.ru/webhook/ecoleadbot",
+    ragApiUrl: "",
     popupDelayMs: 45000,
     cooldownMinutes: 60,
     antiDuplicateMinutes: 60,
@@ -331,7 +332,18 @@
       current_utm: utm,
       utm_parameters: utm,
       entry_page_url: location.href,
-      entry_page_type: detectPageType()
+      entry_page_type: detectPageType(),
+      rag_question: "",
+      rag_answer: "",
+      rag_answer_summary: "",
+      rag_assistant_recommendation: "",
+      rag_confidence: "",
+      rag_sources: [],
+      rag_sources_titles: [],
+      rag_es_signal: "",
+      rag_entry_type: "",
+      previous_screen: "",
+      previous_question_index: null
     };
     Session.save(state);
   }
@@ -515,18 +527,72 @@
 
   /* Куда вести при открытии popup */
   function routeOnOpen() {
-    if (isAlreadySubmitted()) { renderAlreadySubmitted(); return; }
-
     // Session resume (Frontend §19): продолжить с последнего экрана
     if (state.current_screen === "question" && Object.keys(state.answers).length > 0) {
       renderQuestion(clampQuestionIndex(state.question_index));
       return;
     }
     if (state.current_screen === "document_interest") { renderDocumentInterest(); return; }
+    if (state.current_screen === "rag_question") { renderRagQuestion(); return; }
+    if (state.current_screen === "rag_answer") { renderRagAnswer(); return; }
+    if (state.current_screen === "rag_success") { renderRagSuccess(); return; }
     if (state.current_screen === "mini_result") { renderMiniResult(); return; }
-    if (state.current_screen === "contact") { renderContact(); return; }
+    if (state.current_screen === "contact") {
+      if (isAlreadySubmitted()) { renderContactBlocked(); return; }
+      renderContact();
+      return;
+    }
+    if (state.current_screen === "success") { renderFinal(); return; }
 
     renderIntro();
+  }
+
+  /* -----------------------------------------------------------------------
+     11b. NAVIGATION (Scope Freeze v1.3.2)
+     ----------------------------------------------------------------------- */
+  function resetFlowToHome() {
+    track("flow_reset_home", { session_id: state.session_id });
+    renderIntro();
+  }
+
+  function openRagEntry() {
+    track("rag_entry_opened", { session_id: state.session_id });
+    renderRagQuestion();
+  }
+
+  function navigateBackFromContact() {
+    var prev = state.previous_screen || "intro";
+    if (prev === "rag_answer") { renderRagAnswer(); return; }
+    if (prev === "rag_question") { renderRagQuestion(); return; }
+    if (prev === "document_interest") { renderDocumentInterest(); return; }
+    if (prev === "mini_result") { renderMiniResult(); return; }
+    if (prev === "question") {
+      var idx = state.previous_question_index != null
+        ? state.previous_question_index
+        : clampQuestionIndex(state.question_index);
+      renderQuestion(idx);
+      return;
+    }
+    resetFlowToHome();
+  }
+
+  function appendHomeButton(container, useGhost) {
+    var cls = useGhost
+      ? "ecoleadbot-btn ecoleadbot-btn--ghost ecoleadbot-btn--block"
+      : "ecoleadbot-btn ecoleadbot-btn--secondary ecoleadbot-btn--block";
+    var btn = el("button", cls, "В начало");
+    btn.type = "button";
+    btn.addEventListener("click", resetFlowToHome);
+    container.appendChild(btn);
+    return btn;
+  }
+
+  function appendPostSubmitNavActions(container) {
+    var ragBtn = el("button", "ecoleadbot-btn ecoleadbot-btn--primary ecoleadbot-btn--block", "Задать вопрос по экологии");
+    ragBtn.type = "button";
+    ragBtn.addEventListener("click", openRagEntry);
+    container.appendChild(ragBtn);
+    appendHomeButton(container, false);
   }
 
   function clampQuestionIndex(idx) {
@@ -583,7 +649,10 @@
      ----------------------------------------------------------------------- */
   function setScreen(name) {
     state.current_screen = name;
-    if (state.status === "started" && (name === "document_interest" || name === "question" || name === "mini_result" || name === "contact")) {
+    if (state.status === "started" && (
+      name === "document_interest" || name === "question" || name === "mini_result" ||
+      name === "contact" || name === "rag_question" || name === "rag_answer"
+    )) {
       state.status = "partial";
     }
     persist();
@@ -593,30 +662,28 @@
     setScreen("intro");
     hideProgress();
     scrollBodyTop();
-    var headline = HEADLINES[state.headline_variant] || HEADLINES.headline_b;
 
     var screen = el("div", "ecoleadbot-screen ecoleadbot-intro");
     screen.innerHTML =
-      '<h2 class="ecoleadbot-title">' + escapeHtml(headline) + '</h2>' +
-      '<p class="ecoleadbot-subtitle">Подскажем:</p>' +
-      '<ul class="ecoleadbot-intro__list">' +
-      '<li>какие документы обычно нужны;</li>' +
-      '<li>что чаще всего проверяют;</li>' +
-      '<li>что стоит проверить именно вам.</li>' +
-      '</ul>';
+      '<h2 class="ecoleadbot-title">Здравствуйте! Чем могу помочь?</h2>' +
+      '<p class="ecoleadbot-subtitle">Выберите, с чего начать:</p>';
 
     var actions = el("div", "ecoleadbot-intro__actions");
-    var primary = el("button", "ecoleadbot-btn ecoleadbot-btn--primary ecoleadbot-btn--block", "Начать проверку");
+    var primary = el("button", "ecoleadbot-btn ecoleadbot-btn--primary ecoleadbot-btn--block", "Проверить экологические риски");
     primary.type = "button";
     primary.addEventListener("click", startFlow);
 
     var secondary = el("button", "ecoleadbot-btn ecoleadbot-btn--secondary ecoleadbot-btn--block", "Нужен конкретный документ");
     secondary.type = "button";
-    // CR-005: открывает сокращённый сценарий — экран «Что вас интересует?».
     secondary.addEventListener("click", renderDocumentInterest);
+
+    var ragBtn = el("button", "ecoleadbot-btn ecoleadbot-btn--secondary ecoleadbot-btn--block", "Задать вопрос по экологии");
+    ragBtn.type = "button";
+    ragBtn.addEventListener("click", renderRagQuestion);
 
     actions.appendChild(primary);
     actions.appendChild(secondary);
+    actions.appendChild(ragBtn);
     screen.appendChild(actions);
 
     bodyEl.innerHTML = "";
@@ -670,6 +737,8 @@
       startFlow();
     } else {
       // Конкретный интерес → сразу к экрану контактов.
+      state.previous_screen = "document_interest";
+      persist();
       renderContact();
     }
   }
@@ -795,8 +864,286 @@
     var actions = el("div", "ecoleadbot-actions ecoleadbot-actions--sticky");
     var btn = el("button", "ecoleadbot-btn ecoleadbot-btn--primary ecoleadbot-btn--block", "Получить рекомендации");
     btn.type = "button";
-    btn.addEventListener("click", renderContact);
+    btn.addEventListener("click", function () {
+      state.previous_screen = "question";
+      state.previous_question_index = clampQuestionIndex(state.question_index);
+      persist();
+      renderContact();
+    });
     actions.appendChild(btn);
+    screen.appendChild(actions);
+
+    bodyEl.innerHTML = "";
+    bodyEl.appendChild(screen);
+  }
+
+  /* -----------------------------------------------------------------------
+     13b. RAG SCENARIO (Scope Freeze v1.3.1 — третий входной сценарий)
+     ----------------------------------------------------------------------- */
+  function getRagApiUrl() {
+    if (ECOLEADBOT_CONFIG.ragApiUrl) return ECOLEADBOT_CONFIG.ragApiUrl;
+    return location.origin + "/api/rag/ask";
+  }
+
+  function summarizeRagAnswer(text) {
+    var t = String(text || "").trim();
+    if (t.length <= 320) return t;
+    return t.slice(0, 317).trim() + "...";
+  }
+
+  function formatRagSource(source) {
+    var parts = [];
+    if (source.title) parts.push(source.title);
+    if (source.document_number) parts.push(source.document_number);
+    if (source.section) parts.push(source.section);
+    if (!parts.length && source.file_name) parts.push(source.file_name);
+    return parts.join(", ");
+  }
+
+  function buildRagCommentBlock() {
+    if (!state.rag_question) return "";
+    return [
+      "=== RAG QUESTION ===",
+      "",
+      "Вопрос пользователя:",
+      state.rag_question,
+      "",
+      "Краткий ответ ассистента:",
+      state.rag_answer_summary || summarizeRagAnswer(state.rag_answer),
+      "",
+      "Рекомендация ассистента:",
+      state.rag_assistant_recommendation || "",
+      "",
+      "Источник перехода:",
+      "RAG Assistant",
+      "",
+      "Возможный сигнал ЭС:",
+      state.rag_es_signal || "неизвестно"
+    ].join("\n");
+  }
+
+  function goToContactFromRag() {
+    state.answers.help_format = "консультация специалиста";
+    state.rag_entry_type = "rag_question";
+    state.previous_screen = state.rag_answer ? "rag_answer" : "rag_question";
+    persist();
+    track("rag_contact_requested", { session_id: state.session_id });
+    renderContact();
+  }
+
+  function renderRagQuestion() {
+    setScreen("rag_question");
+    hideProgress();
+    scrollBodyTop();
+    track("rag_question_viewed");
+
+    var screen = el("div", "ecoleadbot-screen");
+    var back = el("button", "ecoleadbot-back", "← Назад");
+    back.type = "button";
+    back.addEventListener("click", renderIntro);
+    screen.appendChild(back);
+
+    screen.appendChild(el("h2", "ecoleadbot-title", "Задайте вопрос по экологии"));
+    screen.appendChild(el("p", "ecoleadbot-subtitle",
+      "Отвечу по базе знаний компании и нормативным документам. " +
+      "Если вопрос сложный — предложу консультацию специалиста."));
+
+    var field = el("div", "ecoleadbot-field");
+    var textarea = el("textarea", "ecoleadbot-textarea ecoleadbot-rag-input");
+    textarea.id = "eco-rag-question";
+    textarea.placeholder = "Например: нужно ли делать ПЭК для небольшого производства?";
+    textarea.maxLength = 1500;
+    textarea.value = state.rag_question || "";
+    field.appendChild(textarea);
+    screen.appendChild(field);
+
+    var actions = el("div", "ecoleadbot-intro__actions");
+    var submit = el("button", "ecoleadbot-btn ecoleadbot-btn--primary ecoleadbot-btn--block", "Получить ответ");
+    submit.type = "button";
+    submit.addEventListener("click", function () {
+      var q = textarea.value.trim();
+      if (!q) {
+        textarea.classList.add("is-error");
+        return;
+      }
+      textarea.classList.remove("is-error");
+      submitRagQuestion(q);
+    });
+    var backBtn = el("button", "ecoleadbot-btn ecoleadbot-btn--secondary ecoleadbot-btn--block", "Назад");
+    backBtn.type = "button";
+    backBtn.addEventListener("click", renderIntro);
+    actions.appendChild(submit);
+    actions.appendChild(backBtn);
+    screen.appendChild(actions);
+
+    bodyEl.innerHTML = "";
+    bodyEl.appendChild(screen);
+    textarea.focus();
+  }
+
+  function renderRagLoading() {
+    setScreen("rag_loading");
+    hideProgress();
+    scrollBodyTop();
+    var screen = el("div", "ecoleadbot-screen ecoleadbot-loading");
+    screen.innerHTML = '<div class="ecoleadbot-spinner" aria-hidden="true"></div>' +
+      '<div>Ищу ответ в базе знаний...</div>';
+    bodyEl.innerHTML = "";
+    bodyEl.appendChild(screen);
+  }
+
+  function submitRagQuestion(questionText) {
+    state.rag_question = questionText;
+    state.rag_entry_type = "rag_question";
+    persist();
+    renderRagLoading();
+    track("rag_question_submitted", { session_id: state.session_id });
+
+    fetch(getRagApiUrl(), {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        question: questionText,
+        session_id: state.session_id,
+        page_url: location.href,
+        page_title: document.title || "",
+        page_type: detectPageType()
+      })
+    }).then(function (res) {
+      return res.json();
+    }).then(function (data) {
+      if (!data || data.status !== "ok") {
+        track("rag_answer_error", { session_id: state.session_id });
+        renderRagError();
+        return;
+      }
+      state.rag_answer = data.answer || "";
+      state.rag_answer_summary = summarizeRagAnswer(state.rag_answer);
+      state.rag_assistant_recommendation = data.assistant_recommendation || "";
+      state.rag_confidence = data.confidence || "";
+      state.rag_sources = Array.isArray(data.sources) ? data.sources : [];
+      state.rag_sources_titles = state.rag_sources.map(function (s) {
+        return s.title || s.file_name || "";
+      }).filter(function (t) { return !!t; });
+      state.rag_es_signal = data.es_signal || "неизвестно";
+      persist();
+      track("rag_answer_received", {
+        session_id: state.session_id,
+        recommendation: state.rag_assistant_recommendation
+      });
+      renderRagAnswer();
+    }).catch(function () {
+      track("rag_answer_error", { session_id: state.session_id });
+      renderRagError();
+    });
+  }
+
+  function renderRagAnswer() {
+    setScreen("rag_answer");
+    hideProgress();
+    scrollBodyTop();
+    track("rag_answer_viewed");
+
+    var rec = state.rag_assistant_recommendation;
+    var showConsultCta = rec === "offer_consultation" || rec === "insufficient_info";
+
+    var screen = el("div", "ecoleadbot-screen");
+    screen.appendChild(el("h2", "ecoleadbot-title", "Ответ"));
+    screen.appendChild(el("div", "ecoleadbot-rag-answer", escapeHtml(state.rag_answer || "")));
+
+    if (state.rag_sources && state.rag_sources.length) {
+      var sourcesWrap = el("div", "ecoleadbot-rag-sources");
+      var sourcesTitle = state.rag_sources.length > 1 ? "Источники:" : "Источник:";
+      sourcesWrap.appendChild(el("div", "ecoleadbot-rag-sources__title", sourcesTitle));
+      var list = el("ul", "ecoleadbot-rag-sources__list");
+      state.rag_sources.forEach(function (source) {
+        var line = formatRagSource(source);
+        if (line) list.appendChild(el("li", "", escapeHtml(line)));
+      });
+      sourcesWrap.appendChild(list);
+      screen.appendChild(sourcesWrap);
+    }
+
+    screen.appendChild(el("p", "ecoleadbot-subtitle ecoleadbot-rag-feedback", "Это помогло ответить на ваш вопрос?"));
+
+    var actions = el("div", "ecoleadbot-intro__actions");
+    var yesBtn = el("button", "ecoleadbot-btn ecoleadbot-btn--primary ecoleadbot-btn--block", "Да, помогло");
+    yesBtn.type = "button";
+    yesBtn.addEventListener("click", function () {
+      track("rag_feedback_positive", { session_id: state.session_id });
+      renderRagSuccess();
+    });
+    var specialistBtn = el("button", "ecoleadbot-btn ecoleadbot-btn--secondary ecoleadbot-btn--block", "Хочу уточнить у специалиста");
+    specialistBtn.type = "button";
+    specialistBtn.addEventListener("click", goToContactFromRag);
+    actions.appendChild(yesBtn);
+    actions.appendChild(specialistBtn);
+
+    if (showConsultCta) {
+      var softCta = el("button", "ecoleadbot-btn ecoleadbot-btn--ghost ecoleadbot-btn--block", "Лучше уточнить у специалиста");
+      softCta.type = "button";
+      softCta.addEventListener("click", goToContactFromRag);
+      actions.appendChild(softCta);
+    }
+
+    appendHomeButton(actions, true);
+
+    screen.appendChild(actions);
+    bodyEl.innerHTML = "";
+    bodyEl.appendChild(screen);
+  }
+
+  function renderRagSuccess() {
+    setScreen("rag_success");
+    hideProgress();
+    scrollBodyTop();
+
+    var screen = el("div", "ecoleadbot-screen");
+    screen.appendChild(el("h2", "ecoleadbot-title", "Спасибо! Рад, что удалось помочь."));
+
+    var actions = el("div", "ecoleadbot-intro__actions");
+    var againBtn = el("button", "ecoleadbot-btn ecoleadbot-btn--primary ecoleadbot-btn--block", "Задать ещё вопрос");
+    againBtn.type = "button";
+    againBtn.addEventListener("click", function () {
+      state.rag_answer = "";
+      state.rag_answer_summary = "";
+      state.rag_assistant_recommendation = "";
+      state.rag_confidence = "";
+      state.rag_sources = [];
+      state.rag_sources_titles = [];
+      persist();
+      renderRagQuestion();
+    });
+    actions.appendChild(againBtn);
+    appendHomeButton(actions, false);
+    screen.appendChild(actions);
+
+    bodyEl.innerHTML = "";
+    bodyEl.appendChild(screen);
+  }
+
+  function renderRagError() {
+    setScreen("rag_error");
+    hideProgress();
+    scrollBodyTop();
+
+    var screen = el("div", "ecoleadbot-screen ecoleadbot-state");
+    screen.innerHTML =
+      '<div class="ecoleadbot-state__icon" aria-hidden="true">⚠️</div>' +
+      '<h2 class="ecoleadbot-title">Не удалось получить ответ</h2>' +
+      '<p class="ecoleadbot-subtitle">Сейчас не удалось получить ответ. Можете попробовать позже ' +
+      'или оставить заявку специалисту.</p>';
+
+    var actions = el("div", "ecoleadbot-intro__actions");
+    var retry = el("button", "ecoleadbot-btn ecoleadbot-btn--primary ecoleadbot-btn--block", "Попробовать ещё раз");
+    retry.type = "button";
+    retry.addEventListener("click", renderRagQuestion);
+    var contact = el("button", "ecoleadbot-btn ecoleadbot-btn--secondary ecoleadbot-btn--block", "Связаться со специалистом");
+    contact.type = "button";
+    contact.addEventListener("click", goToContactFromRag);
+    actions.appendChild(retry);
+    actions.appendChild(contact);
+    appendHomeButton(actions, false);
     screen.appendChild(actions);
 
     bodyEl.innerHTML = "";
@@ -862,7 +1209,32 @@
      14b. CONTACT SCREEN (UX §11 / Frontend §27–30)
      Email исключён (решение по противоречию №3).
      ----------------------------------------------------------------------- */
+  function renderContactBlocked() {
+    setScreen("contact_blocked");
+    hideProgress();
+    scrollBodyTop();
+    track("contact_blocked_already_submitted", { session_id: state.session_id });
+
+    var screen = el("div", "ecoleadbot-screen ecoleadbot-final");
+    screen.innerHTML =
+      '<div class="ecoleadbot-final__icon" aria-hidden="true">✓</div>' +
+      '<h2 class="ecoleadbot-title">Ваша заявка уже отправлена</h2>' +
+      '<p class="ecoleadbot-subtitle">Специалист свяжется с вами.</p>';
+
+    var actions = el("div", "ecoleadbot-intro__actions");
+    appendPostSubmitNavActions(actions);
+    screen.appendChild(actions);
+
+    bodyEl.innerHTML = "";
+    bodyEl.appendChild(screen);
+  }
+
   function renderContact() {
+    if (isAlreadySubmitted()) {
+      renderContactBlocked();
+      return;
+    }
+
     setScreen("contact");
     hideProgress();
     scrollBodyTop();
@@ -870,7 +1242,14 @@
 
     var c = state.contact || {};
     var screen = el("div", "ecoleadbot-screen");
-    screen.innerHTML =
+
+    var back = el("button", "ecoleadbot-back", "← Назад");
+    back.type = "button";
+    back.addEventListener("click", navigateBackFromContact);
+    screen.appendChild(back);
+
+    var content = el("div");
+    content.innerHTML =
       '<h2 class="ecoleadbot-title">Оставьте контакты</h2>' +
       '<p class="ecoleadbot-subtitle">Подготовим рекомендации по вашему объекту.</p>' +
 
@@ -917,6 +1296,7 @@
         '<input type="checkbox" id="eco-consent" ' + (state.consent ? "checked" : "") + ' />' +
         '<span>Я согласен с политикой обработки персональных данных</span>' +
       '</label>';
+    screen.appendChild(content);
 
     var actions = el("div", "ecoleadbot-actions ecoleadbot-actions--sticky");
     var submit = el("button", "ecoleadbot-btn ecoleadbot-btn--primary ecoleadbot-btn--block", "Получить рекомендации");
@@ -1099,7 +1479,23 @@
     // сокращённый сценарий Secondary CTA. Основной flow остаётся без этого поля.
     if (a.document_interest) answers.document_interest = a.document_interest;
 
+    // RAG v1.3.1: данные сценария «Задать вопрос по экологии» (без новых Bitrix-полей).
+    if (state.rag_question) {
+      answers.rag_question = state.rag_question;
+      answers.rag_answer_summary = state.rag_answer_summary || summarizeRagAnswer(state.rag_answer);
+      answers.rag_assistant_recommendation = state.rag_assistant_recommendation || "";
+      answers.rag_confidence = state.rag_confidence || "";
+      answers.rag_sources_titles = state.rag_sources_titles || [];
+      answers.rag_entry_type = "rag_question";
+      answers.help_format = a.help_format || "консультация специалиста";
+    }
+
     var utm = state.current_utm || {};
+    var ragBlock = buildRagCommentBlock();
+    var userComment = state.contact.comment || "";
+    var mergedComment = ragBlock
+      ? (ragBlock + (userComment ? "\n\n---\n\n" + userComment : ""))
+      : userComment;
 
     return {
       session_id: state.session_id,
@@ -1127,7 +1523,7 @@
         telegram: state.contact.telegram || "",
         preferred_contact_method: state.preferred_contact_method,
         do_not_call: !!state.do_not_call,
-        comment: state.contact.comment || ""
+        comment: mergedComment
       },
       meta: {
         started_at: state.timestamps.started_at || isoNow(),
@@ -1162,6 +1558,11 @@
   }
 
   function submitLead() {
+    if (isAlreadySubmitted()) {
+      renderContactBlocked();
+      return;
+    }
+
     renderLoading();
     var payload = buildPayload();
 
@@ -1219,17 +1620,17 @@
     scrollBodyTop();
     track("final_screen_viewed");
 
-    var media = MEDIA_BUTTONS.map(function (m) {
-      return '<a href="' + escapeHtml(m.url) + '" target="_blank" rel="noopener noreferrer">' + escapeHtml(m.label) + '</a>';
-    }).join("");
-
     var screen = el("div", "ecoleadbot-screen ecoleadbot-final");
     screen.innerHTML =
       '<div class="ecoleadbot-final__icon" aria-hidden="true">✓</div>' +
       '<h2 class="ecoleadbot-title">Спасибо!</h2>' +
-      '<p class="ecoleadbot-subtitle">Мы подготовим рекомендации по вашему объекту. ' +
-      'С вами свяжется специалист компании «Экологические услуги».</p>' +
-      '<div class="ecoleadbot-media">' + media + '</div>';
+      '<p class="ecoleadbot-subtitle">Заявка отправлена.<br><br>' +
+      'Специалист компании «Экологические услуги» свяжется с вами.</p>';
+
+    var actions = el("div", "ecoleadbot-intro__actions");
+    appendPostSubmitNavActions(actions);
+    screen.appendChild(actions);
+
     bodyEl.innerHTML = "";
     bodyEl.appendChild(screen);
   }
@@ -1262,16 +1663,7 @@
   }
 
   function renderAlreadySubmitted() {
-    setScreen("success");
-    hideProgress();
-    scrollBodyTop();
-    var screen = el("div", "ecoleadbot-screen ecoleadbot-final");
-    screen.innerHTML =
-      '<div class="ecoleadbot-final__icon" aria-hidden="true">✓</div>' +
-      '<h2 class="ecoleadbot-title">Ваша заявка уже отправлена</h2>' +
-      '<p class="ecoleadbot-subtitle">Специалист свяжется с вами.</p>';
-    bodyEl.innerHTML = "";
-    bodyEl.appendChild(screen);
+    renderContactBlocked();
   }
 
   /* -----------------------------------------------------------------------
@@ -1280,7 +1672,6 @@
   function canAutoOpen() {
     if (!ECOLEADBOT_CONFIG.enableAutoPopup) return false;
     if (autoTriggerUsed) return false;
-    if (isAlreadySubmitted()) return false;
     if (inCooldown()) return false;
     if (overlay && !overlay.classList.contains("ecoleadbot-hidden")) return false;
     return true;

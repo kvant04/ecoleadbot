@@ -3,6 +3,11 @@ serve.out.log
 serve.err.log
 *.log
 
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
 # Настройки редактора
 .vscode/
 
@@ -13,3 +18,9 @@ desktop.ini
 
 # Временные файлы
 *.tmp
+
+# Секреты
+.env
+
+# Промежуточные данные парсинга (итог — kb/services.md)
+reports/services_raw.json
