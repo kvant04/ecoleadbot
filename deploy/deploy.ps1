@@ -184,20 +184,28 @@ try {
     }
 
     # Server-only site config with webhook secret (never committed).
-    $webhookSecret = $env:ECOLEADBOT_WEBHOOK_SECRET
-    $webhookUrl = $(if ($env:ECOLEADBOT_WEBHOOK_URL) { $env:ECOLEADBOT_WEBHOOK_URL } else { "https://n8n.ecolusspb.ru/webhook/ecoleadbot" })
-    $elbConfig = @"
-window.ECOLEADBOT_SITE_CONFIG = {
-  webhookUrl: "$webhookUrl",
-  webhookSecret: "$webhookSecret",
-  ragApiUrl: ""
-};
-"@
-    Set-Content -Path (Join-Path $staging "elb-config.js") -Value $elbConfig -Encoding UTF8
+    $webhookSecret = [string]$env:ECOLEADBOT_WEBHOOK_SECRET
+    if (-not $env:ECOLEADBOT_WEBHOOK_URL) {
+        $webhookUrl = "https://n8n.ecolusspb.ru/webhook/ecoleadbot"
+    } else {
+        $webhookUrl = [string]$env:ECOLEADBOT_WEBHOOK_URL
+    }
+    function Escape-JsString([string]$value) {
+        if ($null -eq $value) { return "" }
+        return ($value -replace '\\', '\\' -replace '"', '\"' -replace "`r", "" -replace "`n", "\n")
+    }
+    $elbConfig = @(
+        "window.ECOLEADBOT_SITE_CONFIG = {"
+        ('  webhookUrl: "' + (Escape-JsString $webhookUrl) + '",')
+        ('  webhookSecret: "' + (Escape-JsString $webhookSecret) + '",')
+        '  ragApiUrl: ""'
+        "};"
+    ) -join "`n"
+    [System.IO.File]::WriteAllText((Join-Path $staging "elb-config.js"), $elbConfig + "`n", [System.Text.UTF8Encoding]::new($false))
     if ($webhookSecret) {
         Write-Host "Included elb-config.js with webhookSecret (server only)" -ForegroundColor DarkGray
     } else {
-        Write-Host "WARN: ECOLEADBOT_WEBHOOK_SECRET empty — n8n Header Auth may reject leads" -ForegroundColor Yellow
+        Write-Host "WARN: ECOLEADBOT_WEBHOOK_SECRET empty - n8n Header Auth may reject leads" -ForegroundColor Yellow
     }
 
     # Shell scripts must use LF on Linux VPS (Windows CRLF breaks bash).

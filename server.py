@@ -127,8 +127,8 @@ def health() -> dict[str, str]:
     return {"status": "ok"}
 
 
-@app.post("/api/rag/ask")
-def rag_ask(body: RagAskRequest, request: Request) -> dict[str, Any] | JSONResponse:
+@app.post("/api/rag/ask", response_model=None)
+def rag_ask(body: RagAskRequest, request: Request):
     ip = _client_ip(request)
     # Limit by IP and by session to slow both spray and single-session spam.
     for key in (f"ip:{ip}", f"sid:{body.session_id}"):
