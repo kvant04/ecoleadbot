@@ -31,7 +31,8 @@ deploy/**/*.zip
 deploy/sweb/ecoleadbot-sweb.zip
 deploy/sweb/dist/
 
-# Серверный elb-config с секретом (если лежит в корне VPS-копии)
+# Серверный elb-config с секретом (генерируется deploy.ps1 в корне VPS, не коммитить)
+/elb-config.js
 /elb-config.local.js
 /elb-config.secret.js
 

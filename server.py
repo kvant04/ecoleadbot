@@ -180,6 +180,17 @@ def app_js():
     return FileResponse(ROOT / "app.js", media_type="application/javascript")
 
 
+@app.get("/elb-config.js")
+def elb_config_js():
+    """Site overrides (webhook secret). Prefer root file; fallback to template without secret."""
+    primary = ROOT / "elb-config.js"
+    fallback = ROOT / "deploy" / "sweb" / "elb-config.js"
+    target = primary if primary.is_file() else fallback
+    if not target.is_file():
+        raise HTTPException(status_code=404, detail="Not found")
+    return FileResponse(target, media_type="application/javascript")
+
+
 @app.get("/styles.css")
 def styles_css():
     return FileResponse(ROOT / "styles.css", media_type="text/css")

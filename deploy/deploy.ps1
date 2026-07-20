@@ -149,6 +149,22 @@ if (Test-Path $buildScript) {
     if ($LASTEXITCODE -ne 0) { throw "scripts/build_widget.py failed" }
 }
 
+# Load project .env into process (for webhook secret injection only; .env is not uploaded unless -IncludeEnv).
+$envLocal = Join-Path $Root ".env"
+if (Test-Path $envLocal) {
+    Get-Content $envLocal | ForEach-Object {
+        if ($_ -match '^\s*#' -or $_ -match '^\s*$') { return }
+        $parts = $_ -split '=', 2
+        if ($parts.Count -eq 2) {
+            $name = $parts[0].Trim()
+            $value = $parts[1].Trim().Trim('"').Trim("'")
+            if (-not (Get-Item "Env:$name" -ErrorAction SilentlyContinue)) {
+                Set-Item -Path "Env:$name" -Value $value
+            }
+        }
+    }
+}
+
 $staging = Join-Path $env:TEMP ("ecoleadbot_deploy_" + [guid]::NewGuid().ToString("n"))
 New-Item -ItemType Directory -Path $staging | Out-Null
 
@@ -165,6 +181,23 @@ try {
         if (Test-Path $src) {
             Copy-Item -Path $src -Destination (Join-Path $staging $item) -Recurse -Force
         }
+    }
+
+    # Server-only site config with webhook secret (never committed).
+    $webhookSecret = $env:ECOLEADBOT_WEBHOOK_SECRET
+    $webhookUrl = $(if ($env:ECOLEADBOT_WEBHOOK_URL) { $env:ECOLEADBOT_WEBHOOK_URL } else { "https://n8n.ecolusspb.ru/webhook/ecoleadbot" })
+    $elbConfig = @"
+window.ECOLEADBOT_SITE_CONFIG = {
+  webhookUrl: "$webhookUrl",
+  webhookSecret: "$webhookSecret",
+  ragApiUrl: ""
+};
+"@
+    Set-Content -Path (Join-Path $staging "elb-config.js") -Value $elbConfig -Encoding UTF8
+    if ($webhookSecret) {
+        Write-Host "Included elb-config.js with webhookSecret (server only)" -ForegroundColor DarkGray
+    } else {
+        Write-Host "WARN: ECOLEADBOT_WEBHOOK_SECRET empty — n8n Header Auth may reject leads" -ForegroundColor Yellow
     }
 
     # Shell scripts must use LF on Linux VPS (Windows CRLF breaks bash).
