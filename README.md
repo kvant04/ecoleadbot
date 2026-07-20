@@ -2,29 +2,33 @@
 
 AI-assisted qualification and routing system для [ecolusspb.ru](https://ecolusspb.ru/).
 
-Репозиторий объединяет **виджет квалификации лидов** (frontend + n8n) и **базу знаний RAG** для AI-ассистента по экологическому законодательству и услугам компании.
+Репозиторий объединяет **виджет квалификации лидов v1.4** (frontend + n8n) и **базу знаний RAG** для AI-ассистента по экологическому законодательству и услугам компании.
+
+Master scope: [`dev documentation/EcoLeadBot-Scope-Freeze-v1.4.md`](dev%20documentation/EcoLeadBot-Scope-Freeze-v1.4.md)
 
 ---
 
 ## Структура проекта
 
 ```
-├── app.js, index.html, styles.css              # Frontend MVP (виджет)
-├── server.py, rag_service.py, serve.py       # Backend RAG + dev-серверы
+├── app.js, index.html, styles.css              # Frontend виджет (v1.4)
+├── assets/logo-eu.png                          # Логотип на кнопке и в popup
+├── data/services_catalog_v1.4.json             # 32 услуги, вопросы, маршрутизация
+├── data/mini_assessment_zones_v1.4.json        # Объект → зоны мини-оценки
+├── kb/mini_assessment/                         # Шаблоны текстов зон
+├── server.py, rag_service.py                   # Backend RAG + dev-сервер
+├── docker-compose.yml, deploy/vps_install.sh   # Деплой на VPS
 ├── prompts/ecoleadbot_rag_system_prompt.md     # System prompt RAG Assistant
 ├── raw/                                        # Исходные НПА и FAQ (.txt, .md)
 ├── kb/                                         # База знаний для OpenAI Vector Store
 ├── future_extension/                           # Архив документов вне MVP-RAG
-├── scripts/                                    # Обработка и загрузка
-│   ├── process_kb.py                           # Первичная очистка raw/ → kb/
-│   ├── rag_optimize.py                         # Оптимизация RAG (koap_eco, chunking)
-│   ├── scrape_services.py                      # Парсинг услуг и профиля с сайта
-│   └── upload_kb_to_openai_vector_store.py     # Загрузка kb/*.md в OpenAI Vector Store
-├── evaluation_runner.py                        # Полный evaluation (35 вопросов)
-├── evaluation_rerun_after_fixes.py             # Мини-проверка после правок KB (5 вопросов)
+├── scripts/                                    # Обработка и загрузка KB
+├── evaluation_runner.py                        # Полный evaluation RAG (35 вопросов)
+├── evaluation_rerun_after_fixes.py             # Мини-проверка после правок KB
 ├── reports/                                    # Отчёты обработки (не для Vector Store)
 ├── evaluation/                                 # Тестовый набор EVAL-001…030
-└── dev documentation/                          # Продуктовая документация (.docx)
+├── docs/VPS_DEPLOY_RU.md                       # Деплой на VPS (основной путь)
+└── dev documentation/                          # Продуктовая документация
 ```
 
 ---
@@ -42,47 +46,48 @@ cp .env.example .env
 
 ```bash
 py server.py
-# → http://127.0.0.1:8000
+# → http://127.0.0.1:8000  (Ctrl+F5 после правок)
 ```
 
 ### 3. Загрузка базы знаний в Vector Store
 
 ```bash
-# Первая загрузка
-python scripts/upload_kb_to_openai_vector_store.py
-
-# После ЛЮБЫХ правок kb/*.md — обязательно с --force
-python scripts/upload_kb_to_openai_vector_store.py --force
+python scripts/upload_kb_to_openai_vector_store.py          # первая загрузка
+python scripts/upload_kb_to_openai_vector_store.py --force    # после правок kb/*.md
 ```
 
-> **Важно:** без `--force` скрипт пропускает файлы, которые уже есть в Vector Store.
-> Если вы видите `0 файлов загружено` — содержимое **не обновилось**. Используйте `--force`.
+> Без `--force` скрипт пропускает уже загруженные файлы — RAG будет использовать **старое** содержимое.
 
 Отчёт загрузки: `vector_store_upload_report.md`
 
 ---
 
-## Frontend MVP
+## Frontend MVP v1.4
 
-Виджет квалификации лидов: HTML + CSS + Vanilla JavaScript, без сборки.
+Виджет: HTML + CSS + Vanilla JavaScript, без сборки.
 
 | Файл | Назначение |
 |------|------------|
 | `index.html` | Демо-страница-хост |
-| `app.js` | Логика виджета, scoring, RAG-сценарий, отправка в n8n |
+| `app.js` | Flow v1.4, мини-оценка, каталог 32 услуг, RAG, ES scoring, n8n payload |
 | `styles.css` | Стили (префикс `.ecoleadbot-`) |
-| `server.py` | FastAPI: виджет + `POST /api/rag/ask` |
-| `serve.py` | Только статика (без RAG API) |
+| `server.py` | FastAPI: статика + `/data/` + `/assets/` + `/kb/` + `POST /api/rag/ask` |
 
 Webhook: `https://n8n.ecolusspb.ru/webhook/ecoleadbot`
 
-### RAG-сценарий в виджете (v1.3.2)
+### Сценарии виджета
 
-На стартовом экране три входа: **Проверить экологические риски**, **Нужен конкретный документ**, **Задать вопрос по экологии**.
+| Вход | Что происходит |
+|------|----------------|
+| **Понять, что нужно по экологии** | Основной flow → мини-оценка по зонам → RAG «Подробнее» → контакты |
+| **Нужна конкретная услуга / документ** | Каталог 32 услуг → квалификация по услуге → контакты |
+| **Есть вопрос?** | RAG → ответ / «нет в базе» / техническая ошибка → контакты |
 
-RAG-вопросы идут на `POST /api/rag/ask` (OpenAI GPT-4.1 mini + Vector Store). Лиды по-прежнему только через Contact Screen → n8n → Bitrix24.
+RAG: `POST /api/rag/ask` (OpenAI GPT-4.1 mini + Vector Store). Лиды только через Contact Screen → n8n → Bitrix24.
 
-Ручные тесты: `rag_manual_test.md`
+Payload включает блок **`v14`**: `es_scoring`, `bitrix_comment`, `service_title`, `mini_assessment_zones`, …
+
+Ручные тесты: [`rag_manual_test.md`](rag_manual_test.md)
 
 ---
 
@@ -90,114 +95,55 @@ RAG-вопросы идут на `POST /api/rag/ask` (OpenAI GPT-4.1 mini + Vect
 
 ### Активная база (`kb/`)
 
-~30 документов для Vector Store:
+~30 документов для Vector Store + `kb/mini_assessment/` (шаблоны зон, не в Vector Store).
 
-- федеральные законы и кодексы (7-ФЗ, 89-ФЗ, 96-ФЗ, 416-ФЗ, 248-ФЗ, Водный кодекс);
-- приказы Минприроды, Росстата, Росприроднадзора;
-- `koap_eco.md` — выборка экологических статей КоАП;
-- `FAQ-ekoleadbot-voprosy-i-otvety-po-ekologii.md`;
-- `NVOS-Ref-perechni-dokumentacii-po-kategoriyam-obektov-nvos.md`;
-- `services.md` — услуги компании (ecolusspb.ru);
-- `company_profile.md` — профиль компании, контакты, преимущества.
+Ключевые файлы: законы и приказы, `koap_eco.md`, `FAQ-ekoleadbot-voprosy-i-otvety-po-ekologii.md`, `services.md`, `company_profile.md`.
 
 ### System prompt
 
-`prompts/ecoleadbot_rag_system_prompt.md` — правила ответа RAG Assistant (в т.ч. запрет называть цены услуг). Подхватывается backend при каждом запросе, перезагрузка Vector Store не требуется.
-
-### Загрузка в OpenAI Vector Store
-
-```bash
-python scripts/upload_kb_to_openai_vector_store.py          # первая загрузка / догрузка новых
-python scripts/upload_kb_to_openai_vector_store.py --force  # перезаливка после правок kb/
-```
-
-| Режим | Когда использовать |
-|-------|-------------------|
-| без флагов | Первый запуск или в store ещё нет части файлов |
-| `--force` | После любых изменений в `kb/*.md` — удаляет старые файлы из store и загружает заново |
-
-**Типичная ошибка:** скрипт пишет `Уже в Vector Store (completed): 30` и `0 файлов загружено` — это не сбой API, а пропуск уже существующих файлов. RAG продолжит использовать **старое** содержимое. Решение: `--force`.
-
-При геоблоке OpenAI (`403 unsupported_country_region_territory`) — VPN или прокси в `.env`:
-
-```env
-HTTPS_PROXY=http://user:pass@host:port
-```
-
-### Архив (`future_extension/`)
-
-Документы, исключённые из MVP-RAG (полный КоАП, amendment-приказы, нишевые СанПиН и т.д.).
+`prompts/ecoleadbot_rag_system_prompt.md` — подхватывается backend при каждом запросе.
 
 ### Скрипты обработки
 
 ```bash
-# Первичная обработка нормативки из raw/
-python scripts/process_kb.py
-
-# Оптимизация RAG (koap_eco, chunking, future_extension)
-python scripts/rag_optimize.py
-
-# Парсинг услуг и профиля компании с сайта
-python scripts/scrape_services.py
+python scripts/process_kb.py       # raw/ → kb/
+python scripts/rag_optimize.py     # koap_eco, chunking, future_extension
+python scripts/scrape_services.py  # ecolusspb.ru → kb/services.md
 ```
-
-### Отчёты (`reports/`)
-
-| Файл | Содержание |
-|------|------------|
-| `Processing_kb_report.md` | Результат process_kb.py |
-| `rag_optimization_report.md` | Итог RAG-оптимизации |
-| `pek_recommendation.md` | Статусы документов ПЭК |
-| `fkko_validation_report.md` | Валидация ФККО |
-| `services_scraping_report.md` | Парсинг услуг |
-| `company_profile_report.md` | Парсинг профиля компании |
 
 ### Тестирование RAG
 
 ```bash
-# Backend должен быть запущен: py server.py
-
-# Полный evaluation (35 вопросов)
-python evaluation_runner.py
-# → evaluation_results.md, evaluation_results.json
-
-# Мини-проверка после правок KB (5 вопросов)
-python evaluation_rerun_after_fixes.py
-# → evaluation_rerun_after_fixes.md
+py server.py
+python evaluation_runner.py              # → evaluation_results.md
+python evaluation_rerun_after_fixes.py   # → evaluation_rerun_after_fixes.md
 ```
 
-Ручной набор сценариев: `evaluation/evaluation_set.md`  
-Шаблон отчёта PO: `evaluation/evaluation_report_template.md`
+Набор сценариев: `evaluation/evaluation_set.md`
 
 ---
 
-## Деплой (публичный сервер)
+## Деплой
 
-Проект: [github.com/kvant04/ecoleadbot](https://github.com/kvant04/ecoleadbot)
-
-### Render.com (рекомендуется)
-
-1. [Deploy to Render](https://render.com/deploy?repo=https://github.com/kvant04/ecoleadbot) — Blueprint из `render.yaml`
-2. В Render Dashboard задайте секреты:
-   - `OPENAI_API_KEY`
-   - `OPENAI_VECTOR_STORE_ID`
-3. После деплоя URL вида: `https://ecoleadbot.onrender.com`
-
-Health check: `GET /api/health`  
-Виджет: корень `/`
-
-### Docker
+**Основной путь — VPS:** пошаговая инструкция в [`docs/VPS_DEPLOY_RU.md`](docs/VPS_DEPLOY_RU.md).
 
 ```bash
-docker build -t ecoleadbot .
-docker run -p 8000:8000 --env-file .env ecoleadbot
+# На VPS после git clone и .env:
+bash deploy/vps_install.sh
+curl http://127.0.0.1:8000/api/health   # → {"status":"ok"}
+```
+
+Локально через Docker:
+
+```bash
+docker compose up -d --build
 ```
 
 ---
 
 ## Важно
 
-- В **Vector Store** загружать только файлы из `kb/`, не `reports/` и не `future_extension/`.
-- После правок `kb/*.md` — **всегда** `upload_kb_to_openai_vector_store.py --force`.
-- Юридический смысл нормативных документов при обработке не изменялся.
-- Frontend — тестовая публикация перед установкой на ecolusspb.ru; webhook и payload n8n не менять.
+- В **Vector Store** загружать только `kb/*.md` (не `reports/`, не `future_extension/`, не `kb/mini_assessment/`).
+- После правок `kb/*.md` — **`upload_kb_to_openai_vector_store.py --force`**.
+- Каталог виджета: **`data/services_catalog_v1.4.json`** (источник правды для 32 услуг).
+- n8n: webhook тот же; новые поля лида — в **`v14.*`** и **`contact.comment`** (готовый Bitrix-комментарий).

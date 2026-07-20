@@ -1,0 +1,134 @@
+{
+  "version": "1.4.1",
+  "updated": "2026-07-05",
+  "description": "Признаки объекта → зоны предварительной оценки. Тексты зон — kb/mini_assessment/*.md; «Подробнее» — гибрид: kb/mini_assessment/podrobnee/*.md, затем ИИ.",
+  "object_signals": [
+    {
+      "id": "tko",
+      "label": "Мусор и упаковка",
+      "zones": ["otkhody"],
+      "kb_zone_key": "zone_otkhody",
+      "rag_podrobnee_prompt": "Что нужно предприятию по обращению с ТКО и договору с региональным оператором?"
+    },
+    {
+      "id": "production_waste",
+      "label": "Производственные отходы",
+      "zones": ["otkhody"],
+      "kb_zone_key": "zone_otkhody",
+      "rag_podrobnee_prompt": "Какие документы нужны по производственным отходам: инвентаризация, паспорта, ПНООЛР?"
+    },
+    {
+      "id": "emissions",
+      "label": "Выбросы в атмосферу",
+      "zones": ["vozduh", "nvos"],
+      "kb_zone_key": "zone_vozduh",
+      "rag_podrobnee_prompt": "Что проверить по выбросам в атмосферу: учёт НВОС, ПДВ, инвентаризация источников выбросов?"
+    },
+    {
+      "id": "discharge_csv",
+      "label": "Сброс воды в канализацию",
+      "zones": ["voda", "nvos"],
+      "kb_zone_key": "zone_voda",
+      "rag_podrobnee_prompt": "Что нужно при сбросе сточных вод в централизованную канализацию?"
+    },
+    {
+      "id": "discharge_own",
+      "label": "Сброс воды в водные объекты",
+      "zones": ["voda", "nvos"],
+      "kb_zone_key": "zone_voda",
+      "rag_podrobnee_prompt": "Что нужно при собственном сбросе в водный объект: НДС, разрешительная документация?"
+    },
+    {
+      "id": "wells",
+      "label": "Скважина / недропользование",
+      "zones": ["voda"],
+      "kb_zone_key": "zone_voda",
+      "rag_podrobnee_prompt": "Что нужно для легального водозабора из недр: лицензия, ЗСО?"
+    },
+    {
+      "id": "transport",
+      "label": "Спецтехника / транспорт / парковка",
+      "zones": ["vozduh", "otkhody"],
+      "kb_zone_key": "zone_vozduh",
+      "rag_podrobnee_prompt": "Какие экологические требования к автопарку, парковке и хранению отходов?"
+    },
+    {
+      "id": "kitchen",
+      "label": "Кухня",
+      "zones": ["otkhody", "voda"],
+      "kb_zone_key": "zone_otkhody",
+      "rag_podrobnee_prompt": "Экологические требования к общепиту: жироуловители, отходы, сточные воды?"
+    },
+    {
+      "id": "agriculture",
+      "label": "Сельское хозяйство",
+      "zones": ["otkhody", "voda", "nvos"],
+      "kb_zone_key": "zone_otkhody",
+      "rag_podrobnee_prompt": "Экологические обязательности сельхозпредприятия: отходы, санитарно-защитная зона, вода?"
+    },
+    {
+      "id": "import_packaging",
+      "label": "Импорт / производство товаров и/или упаковки",
+      "zones": ["ekosbor"],
+      "kb_zone_key": "zone_ekosbor",
+      "rag_podrobnee_prompt": "Нужно ли предприятию платить экологический сбор за товары и упаковку и что проверить?"
+    }
+  ],
+  "zone_display_order": ["otkhody", "vozduh", "voda", "nvos", "ekosbor", "ker_gee"],
+  "zone_titles": {
+    "otkhody": "Отходы",
+    "vozduh": "Воздух",
+    "voda": "Вода и недра",
+    "nvos": "НВОС, учёт и отчётность",
+    "ekosbor": "Экологический сбор за товары и упаковку",
+    "ker_gee": "Сложные экологические разрешения (КЭР, ГЭЭ)"
+  },
+  "zone_templates": {
+    "otkhody": {
+      "kb_zone_key": "zone_otkhody",
+      "rag_podrobnee_prompt": "Что проверить предприятию по обращению с отходами: ТКО и производственные отходы?"
+    },
+    "vozduh": {
+      "kb_zone_key": "zone_vozduh",
+      "rag_podrobnee_prompt": "Что проверить по выбросам в атмосферу: учёт НВОС, ПДВ, инвентаризация источников?"
+    },
+    "voda": {
+      "kb_zone_key": "zone_voda",
+      "rag_podrobnee_prompt": "Что нужно при сбросах и водопользовании: ЦСВ, собственный сброс, лицензия на воду?"
+    },
+    "nvos": {
+      "kb_zone_key": "zone_nvos",
+      "rag_podrobnee_prompt": "Что проверить по учёту НВОС, отчётности и экологическому сопровождению?"
+    },
+    "ekosbor": {
+      "kb_zone_key": "zone_ekosbor",
+      "rag_podrobnee_prompt": "Нужно ли платить экологический сбор за товары и упаковку и как проверить?"
+    },
+    "ker_gee": {
+      "kb_zone_key": "zone_ker_gee",
+      "rag_podrobnee_prompt": "Когда нужны КЭР или госэкологическая экспертиза и с чего начать?"
+    }
+  },
+  "zone_kb_template_prefix": "mini_assessment",
+  "podrobnee_kb_prefix": "mini_assessment/podrobnee",
+  "fallback_zone": {
+    "id": "general",
+    "kb_zone_key": "zone_general",
+    "title": "Общая оценка",
+    "rag_podrobnee_prompt": "С чего начать приведение экологии предприятия в порядок?"
+  },
+  "bitrix_comment_template": {
+    "blocks": [
+      {
+        "id": "object",
+        "title": "Характеристика объекта",
+        "fields": ["activity_type", "object_signals", "object_signal_uncertain", "nvos_category", "sites_count", "main_situation", "urgency", "help_format"]
+      },
+      {
+        "id": "goal",
+        "title": "Цель обращения",
+        "fields": ["direction", "service_title", "qualification_answers", "mini_assessment_zones"]
+      }
+    ]
+  }
+}

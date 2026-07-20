@@ -1,0 +1,360 @@
+{
+  "name": "EcoLeadBot",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5614822f-98ea-47ec-a228-699e9583ebe7",
+              "name": "=name",
+              "value": "={{$json.name}}",
+              "type": "string"
+            },
+            {
+              "id": "bbdef298-73ee-4e32-92bc-43e7350bc8c7",
+              "name": "=phone",
+              "value": "={{$json.phone}}",
+              "type": "string"
+            },
+            {
+              "id": "ff5d2557-25c9-4c20-9b47-01517b44261f",
+              "name": "=segment",
+              "value": "={{$json.segment}}",
+              "type": "string"
+            },
+            {
+              "id": "5527ebe6-7ee3-48fe-866e-dbdba88b493b",
+              "name": "=segment_id",
+              "value": "={{$json.segment_id}}",
+              "type": "string"
+            },
+            {
+              "id": "5a806969-ed98-46c0-a807-5a02e19f5ee4",
+              "name": "=complexity",
+              "value": "={{$json.complexity}}",
+              "type": "string"
+            },
+            {
+              "id": "fc82225f-3e88-40e8-8f7c-a8ccd9809c4b",
+              "name": "=complexity_id",
+              "value": "={{$json.complexity_id}}",
+              "type": "string"
+            },
+            {
+              "id": "2695888d-99ab-4f8d-b2d8-5e9adc680214",
+              "name": "=es_potential",
+              "value": "={{$json.es_potential}}",
+              "type": "string"
+            },
+            {
+              "id": "e8c8b39d-ffed-46f0-bee1-c969a80f9387",
+              "name": "=es_potential_id",
+              "value": "={{$json.es_potential.id}}",
+              "type": "string"
+            },
+            {
+              "id": "4594da18-e115-4929-afeb-bd503558f867",
+              "name": "=route",
+              "value": "={{$json.route}}",
+              "type": "string"
+            },
+            {
+              "id": "70bf8c85-cd27-4574-855f-e02aeb631487",
+              "name": "=summary",
+              "value": "={{$json.summary}}",
+              "type": "string"
+            },
+            {
+              "id": "02b8e0c1-e13f-44f5-8101-a4d1e1f5cb2d",
+              "name": "=route_id",
+              "value": "={{$json.route_id}}",
+              "type": "string"
+            },
+            {
+              "id": "168026ca-0280-4447-b986-ffbecef2e784",
+              "name": "=priority",
+              "value": "={{$json.priority}}",
+              "type": "string"
+            },
+            {
+              "id": "9cd96dad-a4ee-4d7f-bed1-793898d2121a",
+              "name": "=priority_id",
+              "value": "={{$json.priority_id}}",
+              "type": "string"
+            },
+            {
+              "id": "f57384cb-b73b-4f6b-8219-28d4a8a63dc4",
+              "name": "=diy_level",
+              "value": "={{$json.diy_level}}",
+              "type": "string"
+            },
+            {
+              "id": "221ccca2-326b-4d10-b420-834d542d0af1",
+              "name": "=diy_level_id",
+              "value": "={{$json.diy_level_id}}",
+              "type": "string"
+            },
+            {
+              "id": "07a479f5-9eda-4bd8-a86e-4bfedd007935",
+              "name": "=responsible",
+              "value": "={{$json.responsible}}",
+              "type": "string"
+            },
+            {
+              "id": "2d4d4601-3c0a-4723-ba3c-9c02e31e325c",
+              "name": "=responsible_id",
+              "value": "={{$json.responsible_id}}",
+              "type": "string"
+            },
+            {
+              "id": "4dc60e10-83bd-4acd-9576-40cd87431cc7",
+              "name": "=urgency",
+              "value": "={{$json.urgency}}",
+              "type": "string"
+            },
+            {
+              "id": "48b747ab-245a-4821-82d2-bbe3150db74a",
+              "name": "=urgency_id",
+              "value": "={{$json.urgency_id}}",
+              "type": "string"
+            },
+            {
+              "id": "e80bbe1a-781c-4567-8a11-d240d1032da0",
+              "name": "=object_count",
+              "value": "={{$json.object_count}}",
+              "type": "string"
+            },
+            {
+              "id": "d06659c4-0cd7-403f-9805-9051c8d33ee3",
+              "name": "=object_count_id",
+              "value": "={{$json.object_count_id}}",
+              "type": "string"
+            },
+            {
+              "id": "1ae71a31-6c1f-4539-b0f3-49679f0aad20",
+              "name": "=tags",
+              "value": "={{$json.tags}}",
+              "type": "string"
+            },
+            {
+              "id": "6130c697-c383-4d34-b839-ba0d5eb9f4ee",
+              "name": "=session_id",
+              "value": "={{$json.session_id}}",
+              "type": "string"
+            },
+            {
+              "id": "23fa72a8-5781-4a8a-8877-c2033cd801b0",
+              "name": "=admin_hint",
+              "value": "={{$json.admin_hint}}",
+              "type": "string"
+            },
+            {
+              "id": "3c759b28-f1d4-46d0-ac3d-b583e535204b",
+              "name": "sales_hint",
+              "value": "={{$json.sales_hint}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        960,
+        0
+      ],
+      "id": "bee96bd6-bb28-43fc-ab42-1cb1ec7c3541",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "ecoleadbot",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "f4a32af5-bfef-4aba-a13a-f4bcdf6d4f92",
+      "name": "Webhook",
+      "webhookId": "97c020ff-91e0-4df5-9791-7a0f94889552"
+    },
+    {
+      "parameters": {
+        "jsCode": "const body = $json.body || $json;\n\nconst answers = body.answers || {};\nconst contact = body.contact || {};\nconst source = body.source || {};\nconst meta = body.meta || {};\n\n// CR-005: интерес по конкретному документу\nconst documentInterest = answers.document_interest || \"\";\n\nconst documentInterestLabels = {\n  reporting: \"Отчетность\",\n  waste: \"Отходы\",\n  emissions: \"Выбросы в воздух\",\n  water_subsoil: \"Сбросы воды / скважина / недра\",\n  inspection: \"Проверка / штраф\",\n  unknown: \"Не знаю, что именно нужно\"\n};\n\nconst documentInterestLabel = documentInterestLabels[documentInterest] || \"\";\n\n// Сокращенный сценарий: пользователь выбрал конкретный документ и сразу перешел к контактам.\n// В этом сценарии мы НЕ знаем сегмент, ответственного, срочность и ES-потенциал.\n// Поэтому не подставляем ложные значения \"Никто\", \"В течение месяца\" и т.д.\nconst isDocumentFlow = !!documentInterest && documentInterest !== \"unknown\";\n\n// ---------- Raw values ----------\nconst objectType = answers.object_type || (isDocumentFlow ? \"Другое\" : \"\");\nconst features = Array.isArray(answers.object_features) ? answers.object_features : [];\nconst sitesCountRaw = answers.sites_count || \"1\";\n\nconst responsibleRaw = answers.ecology_responsible || \"\";\nconst situation = answers.main_situation || \"\";\nconst urgencyRaw = answers.urgency || \"\";\nconst helpFormat = answers.help_format || \"\";\n\n// ---------- Complexity ----------\nlet complexityScore = 0;\n\nif (!isDocumentFlow) {\n  if (objectType === \"Производство\") complexityScore += 30;\n  if (objectType === \"Стройка\") complexityScore += 20;\n  if (objectType === \"Автосервис / СТО\" || objectType === \"СТО\") complexityScore += 15;\n  if (objectType === \"Автомойка\") complexityScore += 15;\n  if (objectType === \"Склад\") complexityScore += 10;\n  if (objectType === \"Магазин / торговля\" || objectType === \"Торговля\") complexityScore += 5;\n\n  if (features.includes(\"Мусор и упаковка\")) complexityScore += 10;\n  if (features.includes(\"Масла / ветошь\") || features.includes(\"Масла, тряпки, фильтры\")) complexityScore += 15;\n  if (features.includes(\"Выбросы в воздух\")) complexityScore += 25;\n  if (features.includes(\"Сброс воды\") || features.includes(\"Сточные воды\")) complexityScore += 35;\n\n  if (sitesCountRaw === \"2-3\" || sitesCountRaw === \"2–3 площадки\" || sitesCountRaw === \"2-3 площадки\") complexityScore += 25;\n  if (sitesCountRaw === \"4+\" || sitesCountRaw === \"4 и более площадок\") complexityScore += 40;\n\n  if ((objectType === \"Автосервис / СТО\" || objectType === \"СТО\") && features.some(f => f.includes(\"Масла\"))) {\n    complexityScore += 15;\n  }\n\n  if (objectType === \"Производство\" && features.some(f => f.includes(\"Масла\"))) {\n    complexityScore += 35;\n  }\n\n  if (objectType === \"Производство\" && features.includes(\"Выбросы в воздух\")) {\n    complexityScore += 25;\n  }\n\n  if (objectType === \"Производство\" && (features.includes(\"Сброс воды\") || features.includes(\"Сточные воды\"))) {\n    complexityScore += 35;\n  }\n}\n\nlet complexity = \"Простой\";\nif (complexityScore >= 70) complexity = \"Сложный\";\nelse if (complexityScore >= 30) complexity = \"Средний\";\n\n// ---------- Urgency ----------\nlet urgencyScore = 0;\n\nif (!isDocumentFlow) {\n  if (urgencyRaw === \"В этом году\" || urgencyRaw === \"Не срочно\") urgencyScore += 10;\n  if (urgencyRaw === \"В течение квартала\") urgencyScore += 25;\n  if (urgencyRaw === \"В течение месяца\" || urgencyRaw === \"В ближайшие недели\") urgencyScore += 40;\n  if (urgencyRaw === \"Срочно\" || urgencyRaw === \"Очень срочно\") urgencyScore += 60;\n  if (situation === \"Проверка или предписание\") urgencyScore += 70;\n}\n\nlet urgency = \"Низкая\";\nif (urgencyScore >= 60) urgency = \"Высокая\";\nelse if (urgencyScore >= 20) urgency = \"Средняя\";\n\n// ---------- ES Potential ----------\nlet esScore = 0;\n\nif (!isDocumentFlow) {\n  if (responsibleRaw === \"Подрядчик\") esScore += 10;\n  if (responsibleRaw === \"Охрана труда\" || responsibleRaw === \"Специалист по охране труда\") esScore += 20;\n  if (responsibleRaw === \"Бухгалтер\") esScore += 35;\n  if (responsibleRaw === \"Директор\") esScore += 40;\n  if (responsibleRaw === \"Никто\") esScore += 45;\n\n  if (helpFormat === \"Чтобы кто-то полностью занимался экологией\") esScore += 60;\n  if (helpFormat === \"Чтобы специалист сделал конкретный документ\" || helpFormat === \"Нужна конкретная услуга\") esScore += 25;\n  if (helpFormat === \"Чтобы специалист подсказал, что нужно\" || helpFormat === \"Нужна консультация\") esScore += 20;\n  if (helpFormat === \"Пока не решили\") esScore += 10;\n  if (situation === \"Проверка или предписание\") esScore += 30;\n\n  if ((sitesCountRaw === \"2-3\" || sitesCountRaw === \"4+\") && responsibleRaw === \"Никто\") {\n    esScore += 30;\n  }\n}\n\nlet esPotential = \"Низкий\";\nif (esScore >= 70) esPotential = \"Высокий\";\nelse if (esScore >= 30) esPotential = \"Средний\";\n\n// ---------- DIY ----------\nlet diyScore = 0;\n\nif (!isDocumentFlow) {\n  if (helpFormat === \"Разобраться самому\" || helpFormat === \"Хочу разобраться сам\") diyScore += 60;\n  if (situation === \"Пока изучаем\") diyScore += 20;\n  if (helpFormat === \"Пока не решили\") diyScore += 10;\n}\n\nlet diyLevel = \"Низкий\";\nif (diyScore >= 60) diyLevel = \"Высокий\";\nelse if (diyScore >= 30) diyLevel = \"Средний\";\n\n// ---------- Route ----------\nconst hasEmissions = features.includes(\"Выбросы в воздух\");\nconst hasDischarge = features.includes(\"Сброс воды\") || features.includes(\"Сточные воды\");\n\nconst multiSite =\n  sitesCountRaw === \"2-3\" ||\n  sitesCountRaw === \"4+\" ||\n  sitesCountRaw === \"2-3 площадки\" ||\n  sitesCountRaw === \"4 и более площадок\";\n\nlet route = \"Услуга\";\n\nif (isDocumentFlow) {\n  route = \"Услуга\";\n} else if (\n  complexity === \"Сложный\" ||\n  (objectType === \"Производство\" && hasEmissions && hasDischarge) ||\n  (hasEmissions && hasDischarge) ||\n  (multiSite && (\n    responsibleRaw === \"Никто\" ||\n    situation === \"Не знаем что нужно сдавать\" ||\n    situation === \"Не понимаю что требуется\"\n  ))\n) {\n  route = \"Консультация\";\n} else if (esPotential === \"Высокий\") {\n  route = \"Потенциал ЭС\";\n} else if (diyLevel === \"Высокий\" && urgency !== \"Высокая\") {\n  route = \"Самостоятельно\";\n}\n\n// ---------- Priority ----------\nlet priority = \"Средний\";\n\nif (isDocumentFlow) {\n  priority = documentInterest === \"inspection\" ? \"Высокий\" : \"Средний\";\n} else if (\n  situation === \"Проверка или предписание\" ||\n  urgency === \"Высокая\" ||\n  complexity === \"Сложный\" ||\n  esPotential === \"Высокий\"\n) {\n  priority = \"Высокий\";\n} else if (diyLevel === \"Высокий\" && urgency === \"Низкая\") {\n  priority = \"Низкий\";\n}\n\n// ---------- Object count ----------\nlet objectCount = \"1 площадка\";\n\nif (sitesCountRaw === \"2-3\" || sitesCountRaw === \"2–3 площадки\" || sitesCountRaw === \"2-3 площадки\") {\n  objectCount = \"2-3 площадки\";\n}\n\nif (sitesCountRaw === \"4+\" || sitesCountRaw === \"4 и более площадок\") {\n  objectCount = \"4 и более площадок\";\n}\n\n// ---------- Tags ----------\nconst tags = [];\n\nif (objectType === \"Производство\") tags.push(\"production\");\nif (objectType === \"Склад\") tags.push(\"warehouse\");\nif (objectType === \"Стройка\") tags.push(\"construction\");\nif (objectType === \"Автосервис / СТО\" || objectType === \"СТО\") tags.push(\"car_service\");\nif (objectType === \"Автомойка\") tags.push(\"car_wash\");\n\nif (!isDocumentFlow) {\n  if (responsibleRaw === \"Никто\") tags.push(\"no_ecologist\");\n  if (responsibleRaw === \"Бухгалтер\") tags.push(\"accountant_responsible\");\n  if (responsibleRaw === \"Директор\") tags.push(\"director_responsible\");\n\n  if (urgency === \"Высокая\") tags.push(\"urgent\");\n  if (situation === \"Проверка или предписание\") tags.push(\"inspection_risk\");\n  if (esPotential === \"Высокий\") tags.push(\"high_es\");\n  if (diyLevel === \"Высокий\") tags.push(\"diy\");\n  if (multiSite) tags.push(\"multi_site\");\n}\n\nif (documentInterest) {\n  tags.push(\"document_interest_\" + documentInterest);\n}\n\nif (isDocumentFlow) {\n  tags.push(\"short_document_flow\");\n}\n\n// ---------- IDs for Bitrix ----------\nconst ids = {\n  segment: {\n    \"Производство\": 3948,\n    \"Склад\": 3949,\n    \"Стройка\": 3950,\n    \"Автосервис / СТО\": 3951,\n    \"СТО\": 3951,\n    \"Автомойка\": 3952,\n    \"Магазин / торговля\": 3953,\n    \"Торговля\": 3953,\n    \"Офис\": 3954,\n    \"ЖКХ\": 3955,\n    \"Сельхоз\": 3956,\n    \"Другое\": 3957\n  },\n  complexity: {\n    \"Простой\": 3958,\n    \"Средний\": 3959,\n    \"Сложный\": 3960\n  },\n  priority: {\n    \"Низкий\": 3964,\n    \"Средний\": 3965,\n    \"Высокий\": 3966\n  },\n  route: {\n    \"Услуга\": 3970,\n    \"Консультация\": 3971,\n    \"Самостоятельно\": 3972,\n    \"Потенциал ЭС\": 3973\n  },\n  diy: {\n    \"Низкий\": 3974,\n    \"Средний\": 3975,\n    \"Высокий\": 3976\n  },\n  responsible: {\n    \"Штатный эколог\": 3987,\n    \"Бухгалтер\": 3988,\n    \"Директор\": 3989,\n    \"Охрана труда\": 3990,\n    \"Специалист по охране труда\": 3990,\n    \"Подрядчик\": 3991,\n    \"Никто\": 3992\n  },\n  urgency: {\n    \"Низкая\": 3993,\n    \"Средняя\": 3994,\n    \"Высокая\": 3995\n  },\n  object_count: {\n    \"1 площадка\": 3996,\n    \"2-3 площадки\": 3997,\n    \"4 и более площадок\": 3998\n  }\n};\n\n// ---------- Texts ----------\nconst documentLine = documentInterestLabel\n  ? `Интерес по документу: ${documentInterestLabel}. `\n  : \"\";\n\nconst summary = isDocumentFlow\n  ? `${documentLine}Пользователь выбрал сокращенный сценарий “Нужен конкретный документ”. Детальная квалификация объекта не проходилась.`\n  : `${documentLine}${objectType || \"Объект не указан\"}. ` +\n    `Ответственный за экологию: ${responsibleRaw || \"не указан\"}. ` +\n    `Факторы: ${features.join(\", \") || \"не указаны\"}. ` +\n    `Срочность: ${urgencyRaw || \"не указана\"}. ` +\n    `Формат помощи: ${helpFormat || \"не указан\"}.`;\n\nconst adminHint = documentInterestLabel\n  ? `Уточнить, какой именно документ нужен по направлению: ${documentInterestLabel}. Затем квалифицировать клиента по стандартному скрипту: регион, юрлицо, кто принимает решение, сроки, действующие документы.`\n  : `Уточнить регион, юрлицо, кто принимает решение, есть ли действующие документы и сроки.`;\n\nconst salesHint = isDocumentFlow\n  ? \"Клиент пришел за конкретным документом. Сначала уточнить потребность и контекст. Не делать вывод о потенциале ЭС без дополнительной квалификации.\"\n  : esPotential === \"Высокий\"\n    ? \"Есть потенциал ЭС. Не продавать только разовую услугу, мягко вывести на консультацию и аутсорс экологии.\"\n    : \"Обработать по маршруту, уточнить потребность и ближайший следующий шаг.\";\n\n// ---------- Return ----------\nreturn [\n  {\n    json: {\n      session_id: body.session_id,\n\n      name: contact.name,\n      phone: contact.phone_or_whatsapp,\n      telegram: contact.telegram || \"\",\n      comment: contact.comment || \"\",\n\n      segment: objectType,\n      segment_id: ids.segment[objectType] || null,\n\n      complexity,\n      complexity_id: ids.complexity[complexity] || null,\n\n      priority,\n      priority_id: ids.priority[priority] || null,\n\n      es_potential: esPotential,\n      es_potential_id: null,\n\n      route,\n      route_id: ids.route[route] || null,\n\n      diy_level: diyLevel,\n      diy_level_id: ids.diy[diyLevel] || null,\n\n      responsible: responsibleRaw,\n      responsible_id: ids.responsible[responsibleRaw] || null,\n\n      urgency,\n      urgency_id: ids.urgency[urgency] || null,\n\n      object_count: objectCount,\n      object_count_id: ids.object_count[objectCount] || null,\n\n      document_interest: documentInterest,\n      document_interest_label: documentInterestLabel,\n\n      tags: tags.join(\",\"),\n\n      summary,\n      admin_hint: adminHint,\n      sales_hint: salesHint,\n\n      entry_type: source.entry_type,\n      page_url: source.page_url,\n      page_title: source.page_title,\n      page_type: source.page_type,\n      started_at: meta.started_at,\n      completed_at: meta.completed_at,\n      device: meta.device\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        208,
+        0
+      ],
+      "id": "9e5f3ad0-86dc-463c-88ec-a0e501620f00",
+      "name": "Normalize + Scoring"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.BITRIX_WEBHOOK_URL }}",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{\n({\n  fields: {\n    TITLE: \"EcoLeadBot / Сегмент - \" + $json.segment + \" / Потенциал ЭС - \" + $json.es_potential,\n\n    NAME: $json.name,\n\n    PHONE: [\n      {\n        VALUE: $json.phone,\n        VALUE_TYPE: \"WORK\"\n      }\n    ],\n\n    ASSIGNED_BY_ID: 13860,\n\n    SOURCE_ID: \"UC_KQYSW1\",\n\n    COMMENTS:\n`=== EcoLeadBot ===\n\nСегмент: ${$json.segment}\nСложность кейса: ${$json.complexity}\nПриоритет: ${$json.priority}\nПотенциал ЭС: ${$json.es_potential}\nМаршрут: ${$json.route}\nУровень самостоятельности: ${$json.diy_level}\nКто занимается экологией: ${$json.responsible}\nСрочность: ${$json.urgency}\nКоличество площадок: ${$json.object_count}\n\nРезюме:\n${$json.summary}\n\nПодсказка администратору:\n${$json.admin_hint}\n\nПодсказка менеджеру:\n${$json.sales_hint}\n\nТеги:\n${$json.tags}\n\nID сессии:\n${$json.session_id}`,\n\n    UF_CRM_1780045640: Number($json.segment_id),\n    UF_CRM_1780045381: Number($json.complexity_id),\n    UF_CRM_1780045704: Number($json.priority_id),\n    UF_CRM_1780045778: Number($json.route_id),\n    UF_CRM_1780045805: Number($json.diy_level_id),\n    UF_CRM_1780047226: Number($json.responsible_id),\n    UF_CRM_1780047272: Number($json.urgency_id),\n    UF_CRM_1780047302: Number($json.object_count_id),\n    UF_CRM_1780045834: $json.tags,\n    UF_CRM_1780045115: $json.session_id,\n    UF_CRM_1780045861: $json.summary,\n    UF_CRM_1780045878: $json.admin_hint,\n    UF_CRM_1780046722: $json.sales_hint\n  }\n})\n}}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        1152,
+        0
+      ],
+      "id": "143dc822-53eb-4157-b542-63fcda8f40cf",
+      "name": "HTTP Request Bitrix24"
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4.1-MINI"
+        },
+        "responses": {
+          "values": [
+            {
+              "role": "system",
+              "content": "Ты помощник отдела продаж экологической компании.\n\nТебе запрещено менять:\n- segment\n- complexity\n- priority\n- es_potential\n- route\n- diy_level\n- urgency\n- scores\n- tags\n\nЭти значения уже рассчитаны rule-based системой.\n\nТвоя задача:\n1. Сформировать краткое резюме заявки для администратора.\n2. Дать подсказку администратору, что уточнить.\n3. Дать подсказку менеджеру, как вести разговор.\n4. Писать простым языком без сложных экологических терминов.\n5. Не придумывать данные, которых нет во входе.\n\nВерни строго JSON:\n\n{\n  \"summary\": \"...\",\n  \"admin_hint\": \"...\",\n  \"sales_hint\": \"...\"\n}"
+            },
+            {
+              "content": "={\n  \"segment\": \"{{$json.segment}}\",\n  \"complexity\": \"{{$json.complexity}}\",\n  \"priority\": \"{{$json.priority}}\",\n  \"es_potential\": \"{{$json.es_potential}}\",\n  \"route\": \"{{$json.route}}\",\n  \"diy_level\": \"{{$json.diy_level}}\",\n  \"responsible\": \"{{$json.responsible}}\",\n  \"urgency\": \"{{$json.urgency}}\",\n  \"object_count\": \"{{$json.object_count}}\",\n  \"tags\": \"{{$json.tags}}\",\n  \"summary_rule_based\": \"{{$json.summary}}\",\n  \"admin_hint_rule_based\": \"{{$json.admin_hint}}\",\n  \"sales_hint_rule_based\": \"{{$json.sales_hint}}\"\n}"
+            }
+          ]
+        },
+        "builtInTools": {},
+        "options": {
+          "textFormat": {
+            "textOptions": {
+              "type": "json_object"
+            }
+          },
+          "temperature": 0.2
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 2.1,
+      "position": [
+        416,
+        0
+      ],
+      "id": "12bab192-993d-4acf-89c4-497095225944",
+      "name": "Message a model",
+      "credentials": {
+        "openAiApi": {
+          "id": "iJt33LBR78sjjWhb",
+          "name": "OpenAi account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const ai = $json.output?.[0]?.content?.[0]?.text || {};\n\nreturn [\n  {\n    json: {\n      ...$('Normalize + Scoring').first().json,\n\n      summary: ai.summary || $('Normalize + Scoring').first().json.summary,\n      admin_hint: ai.admin_hint || $('Normalize + Scoring').first().json.admin_hint,\n      sales_hint: ai.sales_hint || $('Normalize + Scoring').first().json.sales_hint\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        752,
+        0
+      ],
+      "id": "32a4613b-4f61-4878-99d4-aed3375c54f4",
+      "name": "Merge AI Summary"
+    }
+  ],
+  "pinData": {
+    "Webhook": [
+      {
+        "json": {
+          "name": "Олег Доронин",
+          "phone_or_whatsapp": "+124455667778788",
+          "telegram": "",
+          "preferred_contact_method": "whatsapp",
+          "do_not_call": true,
+          "comment": ""
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request Bitrix24",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Normalize + Scoring",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize + Scoring": {
+      "main": [
+        [
+          {
+            "node": "Message a model",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Message a model": {
+      "main": [
+        [
+          {
+            "node": "Merge AI Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge AI Summary": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "678541e5-04f3-4e7c-b74b-ee8e5a06e65c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "5fe26d9778c6b6b70c39f65cb7db2665ac0355ea3bf26d8c4197a89df79c2005"
+  },
+  "id": "OcsHgxSZzWJRtCoC",
+  "tags": []
+}

@@ -1,0 +1,96 @@
+{
+  "session_id": "eco_test_main_v14_001",
+  "status": "completed",
+  "source": {
+    "entry_type": "floating_widget",
+    "page_url": "http://127.0.0.1:8000/",
+    "page_title": "Экологические услуги — проверка объекта",
+    "page_type": "seo_article",
+    "utm_source": "",
+    "utm_medium": "",
+    "utm_campaign": "",
+    "utm_content": "",
+    "utm_term": "",
+    "first_touch_utm": {},
+    "current_utm": {},
+    "ab_variant": "floating_widget_a",
+    "popup_trigger": "widget_click",
+    "headline_variant": "headline_a"
+  },
+  "answers": {
+    "activity_type": "Автосервис / СТО",
+    "object_type": "Автосервис / СТО",
+    "object_signal_ids": ["tko", "production_waste", "emissions"],
+    "object_signals": ["Мусор и упаковка", "Производственные отходы", "Выбросы в атмосферу"],
+    "object_signal_uncertain": false,
+    "ecology_responsible": "Директор",
+    "main_situation": "Не знаем, что требуется по экологии",
+    "urgency": "В течение месяца",
+    "help_format": "Чтобы специалист подсказал, что нужно",
+    "nvos_category": "",
+    "sites_count": "1",
+    "qualification_answers": {}
+  },
+  "contact": {
+    "name": "Тест Основной Flow",
+    "phone_or_whatsapp": "+79051111111",
+    "telegram": "",
+    "preferred_contact_method": "phone",
+    "do_not_call": false,
+    "comment": "Характеристика объекта\nНа объекте есть: Мусор и упаковка, Производственные отходы, Выбросы в атмосферу\nКоличество площадок: 1\nАктуально: Не знаем, что требуется по экологии\nСрочность: В течение месяца\nФормат помощи: Чтобы специалист подсказал, что нужно\n\nЦель обращения\nЗоны предварительной оценки:\n- Отходы и расширенная ответственность производителя (Экосбор)\n- Воздух\n- НВОС, учёт и отчётность"
+  },
+  "meta": {
+    "started_at": "2026-06-26T17:00:00.000Z",
+    "completed_at": "2026-06-26T17:08:00.000Z",
+    "last_screen": "contact",
+    "device": "desktop",
+    "browser": "Chrome",
+    "widget_version": "1.5.0",
+    "is_test_build": true
+  },
+  "v14": {
+    "flow": "main",
+    "activity_type": "Автосервис / СТО",
+    "object_signals": ["tko", "production_waste", "emissions"],
+    "nvos_category": "",
+    "sites_count": "1",
+    "main_situation": "Не знаем, что требуется по экологии",
+    "selected_direction": "",
+    "selected_service_id": "",
+    "service_title": "",
+    "service_type": "",
+    "service_direction": "",
+    "mini_zone_ids": ["otkhody", "vozduh", "nvos"],
+    "qualification_answers": {},
+    "mini_assessment_zones": [
+      {
+        "id": "otkhody",
+        "title": "Отходы и расширенная ответственность производителя (Экосбор)",
+        "summary": "Отходы и расширенная ответственность производителя (Экосбор)"
+      },
+      {
+        "id": "vozduh",
+        "title": "Воздух",
+        "summary": "Воздух"
+      },
+      {
+        "id": "nvos",
+        "title": "НВОС, учёт и отчётность",
+        "summary": "НВОС, учёт и отчётность"
+      }
+    ],
+    "mini_zone_rag_id": "",
+    "document_nvos_registry": "",
+    "prefill": {},
+    "es_scoring": {
+      "status": "qualified_lead",
+      "status_label": "Достаточно данных для первичной консультации",
+      "data_points": 8,
+      "es_interest_signal": false,
+      "mini_result_type": "complex",
+      "thin_lead_note": ""
+    },
+    "bitrix_comment": "Характеристика объекта\nНа объекте есть: Мусор и упаковка, Производственные отходы, Выбросы в атмосферу\nКоличество площадок: 1\nАктуально: Не знаем, что требуется по экологии\nСрочность: В течение месяца\nФормат помощи: Чтобы специалист подсказал, что нужно\n\nЦель обращения\nЗоны предварительной оценки:\n- Отходы и расширенная ответственность производителя (Экосбор)\n- Воздух\n- НВОС, учёт и отчётность",
+    "rag_error_kind": ""
+  }
+}

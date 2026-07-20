@@ -1,0 +1,26 @@
+COMMENTS	Комментарий	string
+NAME	Имя	string
+SOURCE_ID	Источник	crm_status
+TITLE	Название лида	string
+UF_CRM_1605607758	Услуга	iblock_element
+UF_CRM_1723014858	Описание квалификации Администратора	string
+UF_CRM_1723014891	Описание квалификации МОП	string
+UF_CRM_1744184298	Название услуги	iblock_element
+UF_CRM_1780045115	ID сессии EcoLeadBot	string
+UF_CRM_1780045381	Сложность кейса	enumeration
+UF_CRM_1780045640	Сегмент	enumeration
+UF_CRM_1780045704	Приоритет	enumeration
+UF_CRM_1780045750	Потенциал ЭС	enumeration
+  3967	Низкий
+  3968	Средний
+  3969	Высокий
+UF_CRM_1780045778	Маршрут	enumeration
+UF_CRM_1780045805	Уровень самостоятельности	enumeration
+UF_CRM_1780045834	Теги EcoLeadBot	string
+UF_CRM_1780045861	Резюме EcoLeadBot	string
+UF_CRM_1780045878	Подсказка администратору	string
+UF_CRM_1780046722	Подсказка менеджеру	string
+UF_CRM_1780047226	Кто занимается экологией	enumeration
+UF_CRM_1780047272	Срочность	enumeration
+UF_CRM_1780047302	Количество площадок	enumeration
+UF_LIST	Название услуги (АРХИВ)	delsis_ib_element

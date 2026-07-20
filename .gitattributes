@@ -1,0 +1,4 @@
+*.sh text eol=lf
+deploy/**/*.sh text eol=lf
+deploy/*.cmd text eol=crlf
+deploy/*.ps1 text eol=crlf

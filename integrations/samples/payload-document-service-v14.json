@@ -1,0 +1,91 @@
+{
+  "session_id": "eco_test_document_v14_002",
+  "status": "completed",
+  "source": {
+    "entry_type": "inline_cta",
+    "page_url": "http://127.0.0.1:8000/",
+    "page_title": "Экологические услуги — проверка объекта",
+    "page_type": "seo_article",
+    "utm_source": "",
+    "utm_medium": "",
+    "utm_campaign": "",
+    "utm_content": "",
+    "utm_term": "",
+    "first_touch_utm": {},
+    "current_utm": {},
+    "ab_variant": "inline_cta_b",
+    "popup_trigger": "cta_click",
+    "headline_variant": "headline_b"
+  },
+  "answers": {
+    "activity_type": "Производство",
+    "object_type": "Производство",
+    "object_signal_ids": ["emissions", "discharge_csv"],
+    "object_signals": ["Выбросы в атмосферу", "Сброс воды в канализацию"],
+    "object_signal_uncertain": false,
+    "ecology_responsible": "Штатный эколог",
+    "main_situation": "Нужно сделать конкретный документ",
+    "urgency": "В течение квартала",
+    "help_format": "Чтобы специалист сделал конкретный документ",
+    "nvos_category": "II",
+    "sites_count": "2–3",
+    "qualification_answers": {
+      "pek_nvos_cat": "II",
+      "sites_count": "2–3",
+      "pek_scope": "Полный ПЭК на объекте"
+    }
+  },
+  "contact": {
+    "name": "Тест Услуга ПЭК",
+    "phone_or_whatsapp": "+79052222222",
+    "telegram": "@test_eco_bot",
+    "preferred_contact_method": "telegram",
+    "do_not_call": true,
+    "comment": "Характеристика объекта\nНа объекте есть: Выбросы в атмосферу, Сброс воды в канализацию\nКатегория НВОС: II\nКоличество площадок: 2–3\nАктуально: Нужно сделать конкретный документ\nСрочность: В течение квартала\nФормат помощи: Чтобы специалист сделал конкретный документ\n\nЦель обращения\nНаправление: НВОС, учёт и отчётность\nУточнения:\n- Категория объекта НВОС?: II\n- Сколько площадок (адресов)?: 2–3\n- Программа ПЭК уже есть?: Полный ПЭК на объекте\n\n---\n\nКомментарий пользователя:\nНужен ПЭК на две площадки, перезвоните в Telegram"
+  },
+  "meta": {
+    "started_at": "2026-06-26T18:00:00.000Z",
+    "completed_at": "2026-06-26T18:12:00.000Z",
+    "last_screen": "contact",
+    "device": "mobile",
+    "browser": "Chrome",
+    "widget_version": "1.5.0",
+    "is_test_build": true
+  },
+  "v14": {
+    "flow": "document",
+    "activity_type": "Производство",
+    "object_signals": ["emissions", "discharge_csv"],
+    "nvos_category": "II",
+    "sites_count": "2–3",
+    "main_situation": "Нужно сделать конкретный документ",
+    "selected_direction": "nvos",
+    "selected_service_id": "pek",
+    "service_title": "Производственный экологический контроль (ПЭК)",
+    "service_type": "standalone",
+    "service_direction": "nvos",
+    "mini_zone_ids": [],
+    "qualification_answers": {
+      "pek_nvos_cat": "II",
+      "sites_count": "2–3",
+      "pek_scope": "Полный ПЭК на объекте"
+    },
+    "mini_assessment_zones": [],
+    "mini_zone_rag_id": "",
+    "document_nvos_registry": "Да",
+    "prefill": {
+      "activity_type": "Производство",
+      "sites_count": "2–3"
+    },
+    "es_scoring": {
+      "status": "complex_lead",
+      "status_label": "Комплексный кейс — нужна консультация специалиста",
+      "data_points": 10,
+      "es_interest_signal": false,
+      "mini_result_type": "complex",
+      "thin_lead_note": ""
+    },
+    "bitrix_comment": "Характеристика объекта\nНа объекте есть: Выбросы в атмосферу, Сброс воды в канализацию\nКатегория НВОС: II\nКоличество площадок: 2–3\nАктуально: Нужно сделать конкретный документ\nСрочность: В течение квартала\nФормат помощи: Чтобы специалист сделал конкретный документ\n\nЦель обращения\nНаправление: НВОС, учёт и отчётность\nУточнения:\n- Категория объекта НВОС?: II\n- Сколько площадок (адресов)?: 2–3\n- Программа ПЭК уже есть?: Полный ПЭК на объекте",
+    "rag_error_kind": ""
+  }
+}

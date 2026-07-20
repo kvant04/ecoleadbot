@@ -101,7 +101,23 @@ body {
   transition: transform var(--eco-transition), background var(--eco-transition);
 }
 .ecoleadbot-widget:hover { background: var(--eco-primary-hover); transform: translateY(-2px); }
-.ecoleadbot-widget__icon { font-size: 18px; line-height: 1; }
+.ecoleadbot-widget__logo-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #fff;
+  flex-shrink: 0;
+}
+.ecoleadbot-widget__logo {
+  display: block;
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+.ecoleadbot-widget__label { line-height: 1.25; text-align: left; }
 
 /* =========================================================================
    INLINE CTA (UX §4.2 / Frontend §11)
@@ -184,6 +200,21 @@ body {
 }
 .ecoleadbot-close:hover { background: var(--eco-bg-soft); }
 
+.ecoleadbot-header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  padding: 12px 48px 0 16px;
+  min-height: 44px;
+}
+.ecoleadbot-header__logo {
+  display: block;
+  height: 36px;
+  width: auto;
+  max-width: 160px;
+  object-fit: contain;
+}
+
 /* Progress bar (UX §8) */
 .ecoleadbot-progress {
   flex: 0 0 auto;
@@ -226,6 +257,50 @@ body {
 
 .ecoleadbot-title { font-size: 21px; font-weight: 700; margin: 0 0 8px; }
 .ecoleadbot-subtitle { font-size: 15px; color: var(--eco-text-muted); margin: 0 0 18px; }
+.ecoleadbot-mini-personal { font-size: 14px; color: var(--eco-text); margin: -8px 0 16px; padding: 10px 12px; background: var(--eco-surface-alt, #f4f7f5); border-radius: 8px; }
+
+.ecoleadbot-service-gate__icon {
+  width: 48px; height: 48px; border-radius: 50%;
+  background: var(--eco-surface-alt, #eef4f0);
+  color: var(--eco-primary, #2d6a4f);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 24px; font-weight: 600; margin: 0 0 16px;
+}
+.ecoleadbot-service-gate__p { margin-bottom: 12px; }
+.ecoleadbot-service-gate .ecoleadbot-actions { margin-top: 8px; }
+
+.ecoleadbot-contact-disclaimer {
+  margin: 0 0 16px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--eco-text-muted);
+}
+
+.ecoleadbot-mini-card {
+  margin: 0 0 20px;
+  padding: 14px 16px;
+  background: var(--eco-surface-alt, #f4f7f5);
+  border-radius: 10px;
+  border: 1px solid var(--eco-border, #e2e8e4);
+}
+.ecoleadbot-mini-card__title { font-size: 16px; margin: 0 0 10px; font-weight: 600; }
+.ecoleadbot-mini-card__subtitle { font-size: 14px; margin: 12px 0 6px; font-weight: 600; }
+.ecoleadbot-mini-card__tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 8px; }
+.ecoleadbot-mini-card__tag {
+  font-size: 12px; padding: 4px 8px; border-radius: 999px;
+  background: #fff; border: 1px solid var(--eco-border, #dce5df);
+}
+.ecoleadbot-mini-card__list { margin: 0 0 8px; padding-left: 20px; font-size: 14px; }
+.ecoleadbot-mini-card__list--ordered { list-style: decimal; }
+.ecoleadbot-mini-zones-heading { font-size: 15px; margin: 0 0 12px; font-weight: 600; }
+.ecoleadbot-mini-hint {
+  font-size: 13px; color: var(--eco-text-muted);
+  padding: 10px 12px; margin: 0 0 16px;
+  background: #fff8e6; border-radius: 8px; border-left: 3px solid #e6a700;
+}
+.ecoleadbot-rag-template-note { font-size: 12px; color: var(--eco-text-muted); margin: -8px 0 16px; }
+.ecoleadbot-rag-answer ul { margin: 8px 0; padding-left: 20px; }
+.ecoleadbot-rag-answer h3 { font-size: 15px; margin: 12px 0 6px; }
 .ecoleadbot-hint { font-size: 13px; color: var(--eco-text-muted); margin: 6px 0 0; }
 
 /* Card-buttons (UX §3) */
@@ -304,8 +379,45 @@ body {
 .ecoleadbot-back:hover { color: var(--eco-text); }
 
 /* Intro screen */
+.ecoleadbot-intro__hint {
+  margin: 0 0 16px;
+  color: var(--eco-text-muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
 .ecoleadbot-intro__list { margin: 0 0 20px; padding-left: 18px; color: var(--eco-text-muted); }
 .ecoleadbot-intro__actions { display: flex; flex-direction: column; gap: 10px; }
+.ecoleadbot-intro__link-wrap { margin-top: 2px; text-align: center; }
+.ecoleadbot-intro__link {
+  background: none;
+  border: none;
+  color: var(--eco-primary);
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+  padding: 8px 4px;
+}
+.ecoleadbot-intro__link:hover { color: var(--eco-accent); }
+.ecoleadbot-question-hint { margin-top: -8px; margin-bottom: 14px; }
+.ecoleadbot-clarify-block { margin-bottom: 18px; }
+.ecoleadbot-clarify-block__title {
+  font-size: 15px;
+  font-weight: 600;
+  margin: 0 0 10px;
+  line-height: 1.35;
+}
+.ecoleadbot-options--compact { gap: 8px; }
+.ecoleadbot-card--compact { padding: 12px 14px; }
+.ecoleadbot-card__note {
+  display: block;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--eco-text-muted);
+  margin-top: 4px;
+  line-height: 1.35;
+}
 
 /* Mini result */
 .ecoleadbot-result {
@@ -315,6 +427,55 @@ body {
   margin-bottom: 18px;
 }
 .ecoleadbot-result__list { margin: 8px 0 0; padding-left: 18px; }
+.ecoleadbot-mini-loading {
+  margin: 0;
+  font-size: 14px;
+  color: var(--eco-text-muted);
+}
+.ecoleadbot-zone-blocks { display: flex; flex-direction: column; gap: 14px; }
+.ecoleadbot-zone-block {
+  padding: 14px 16px;
+  border-radius: var(--eco-radius-sm);
+  background: #fff;
+  border: 1px solid var(--eco-border);
+}
+.ecoleadbot-zone-block__title {
+  margin: 0 0 10px;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.35;
+}
+.ecoleadbot-zone-block__body { margin-bottom: 12px; }
+.ecoleadbot-zone-block__heading {
+  margin: 0 0 8px;
+  font-size: 15px;
+  font-weight: 700;
+}
+.ecoleadbot-zone-block__p {
+  margin: 0 0 8px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--eco-text);
+}
+.ecoleadbot-zone-block__list {
+  margin: 0 0 8px;
+  padding-left: 18px;
+  font-size: 14px;
+  line-height: 1.45;
+}
+.ecoleadbot-zone-block__list li { margin: 4px 0; }
+.ecoleadbot-zone-block__more { margin-top: 4px; }
+
+/* Document branch — группы услуг НВОС */
+.ecoleadbot-service-group__title {
+  margin: 16px 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--eco-text-muted);
+}
+.ecoleadbot-service-group__title:first-child { margin-top: 0; }
 
 /* RAG answer */
 .ecoleadbot-rag-input { min-height: 120px; }
@@ -359,6 +520,24 @@ body {
 .ecoleadbot-textarea { min-height: 80px; resize: vertical; }
 .ecoleadbot-input.is-error,
 .ecoleadbot-textarea.is-error { border-color: #e53e3e; }
+
+.ecoleadbot-btn.is-error {
+  box-shadow: 0 0 0 2px #e53e3e;
+}
+
+.ecoleadbot-clarify-block--error {
+  border-left: 3px solid #e53e3e;
+  padding-left: 12px;
+  margin-left: -12px;
+}
+
+.ecoleadbot-actions__hint {
+  color: #c53030;
+  font-size: 13px;
+  line-height: 1.35;
+  margin: 0 0 10px;
+  text-align: center;
+}
 .ecoleadbot-error { color: #e53e3e; font-size: 13px; margin: 6px 0 0; }
 
 .ecoleadbot-checkbox {
@@ -414,7 +593,8 @@ body {
   align-items: center;
   justify-content: center;
 }
-.ecoleadbot-media { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 22px; }
+.ecoleadbot-final__media-lead { margin-top: 8px; margin-bottom: 4px; }
+.ecoleadbot-media { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; margin-top: 16px; margin-bottom: 8px; }
 .ecoleadbot-media a {
   flex: 0 0 auto;
   padding: 10px 16px;
@@ -426,10 +606,32 @@ body {
   transition: border-color var(--eco-transition), background var(--eco-transition);
 }
 .ecoleadbot-media a:hover { border-color: var(--eco-primary); background: var(--eco-bg-soft); }
+.ecoleadbot-media__highlight {
+  border-color: var(--eco-accent);
+  color: var(--eco-accent);
+  font-weight: 600;
+}
 
-/* Error screen */
+/* Error / empty RAG screens */
 .ecoleadbot-state { text-align: center; padding: 20px 6px; }
 .ecoleadbot-state__icon { font-size: 40px; margin-bottom: 12px; }
+.ecoleadbot-rag-no-answer__question {
+  text-align: left;
+  margin: 16px 0 4px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  background: rgba(0, 0, 0, 0.04);
+}
+.ecoleadbot-rag-no-answer__label {
+  font-size: 12px;
+  color: #666;
+  margin-bottom: 6px;
+}
+.ecoleadbot-rag-no-answer__text {
+  font-size: 14px;
+  line-height: 1.45;
+  word-break: break-word;
+}
 
 /* =========================================================================
    MOBILE: fullscreen overlay, sticky CTA, vertical layout (UX §16 / Frontend §39)

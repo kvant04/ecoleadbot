@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import atexit
 import json
 import logging
 import os
@@ -11,6 +12,7 @@ import time
 from pathlib import Path
 from typing import Any
 
+import httpx
 from openai import APIConnectionError, APITimeoutError, OpenAI
 
 ROOT = Path(__file__).resolve().parent
@@ -76,11 +78,68 @@ BLOCKED_RESPONSE = {
     "es_signal": "неизвестно",
 }
 
+_openai_client: OpenAI | None = None
+_http_client: httpx.Client | None = None
+_system_prompt_cache: str | None = None
+_system_prompt_mtime: float | None = None
+
 
 def load_system_prompt() -> str:
+    """Load system prompt; reload only when file mtime changes."""
+    global _system_prompt_cache, _system_prompt_mtime
     if not PROMPT_PATH.is_file():
         raise FileNotFoundError(f"System prompt not found: {PROMPT_PATH}")
-    return PROMPT_PATH.read_text(encoding="utf-8").strip()
+    mtime = PROMPT_PATH.stat().st_mtime
+    if _system_prompt_cache is not None and _system_prompt_mtime == mtime:
+        return _system_prompt_cache
+    text = PROMPT_PATH.read_text(encoding="utf-8").strip()
+    _system_prompt_cache = text
+    _system_prompt_mtime = mtime
+    return text
+
+
+def get_openai_client() -> OpenAI:
+    """Reuse one OpenAI + httpx client per process."""
+    global _openai_client, _http_client
+    if _openai_client is not None:
+        return _openai_client
+
+    api_key = os.getenv("OPENAI_API_KEY", "").strip()
+    if not api_key:
+        raise RuntimeError("OPENAI_API_KEY is not configured")
+
+    timeout = httpx.Timeout(connect=60.0, read=120.0, write=120.0, pool=60.0)
+    proxy = (
+        os.getenv("HTTPS_PROXY", "").strip()
+        or os.getenv("HTTP_PROXY", "").strip()
+        or os.getenv("OPENAI_PROXY", "").strip()
+    )
+    _http_client = httpx.Client(proxy=proxy or None, timeout=timeout)
+    kwargs: dict[str, Any] = {
+        "api_key": api_key,
+        "http_client": _http_client,
+    }
+    base_url = os.getenv("OPENAI_BASE_URL", "").strip()
+    if base_url:
+        kwargs["base_url"] = base_url
+    _openai_client = OpenAI(**kwargs)
+    logger.info("OpenAI client initialized (singleton)")
+    return _openai_client
+
+
+def close_openai_client() -> None:
+    """Close shared httpx client (call on app shutdown)."""
+    global _openai_client, _http_client
+    if _http_client is not None:
+        try:
+            _http_client.close()
+        except (OSError, RuntimeError) as exc:
+            logger.warning("httpx close failed: %s", type(exc).__name__)
+    _http_client = None
+    _openai_client = None
+
+
+atexit.register(close_openai_client)
 
 
 def _matches_any(text: str, patterns: list[str]) -> bool:
@@ -123,44 +182,28 @@ def detect_es_signal(question: str) -> str:
     return "нет"
 
 
-def create_openai_client() -> OpenAI:
-    import httpx
-
-    api_key = os.getenv("OPENAI_API_KEY", "").strip()
-    if not api_key:
-        raise RuntimeError("OPENAI_API_KEY is not configured")
-
-    timeout = httpx.Timeout(connect=60.0, read=120.0, write=120.0, pool=60.0)
-    proxy = (
-        os.getenv("HTTPS_PROXY", "").strip()
-        or os.getenv("HTTP_PROXY", "").strip()
-        or os.getenv("OPENAI_PROXY", "").strip()
-    )
-    kwargs: dict[str, Any] = {
-        "api_key": api_key,
-        "http_client": httpx.Client(proxy=proxy or None, timeout=timeout),
-    }
-    base_url = os.getenv("OPENAI_BASE_URL", "").strip()
-    if base_url:
-        kwargs["base_url"] = base_url
-    return OpenAI(**kwargs)
-
-
 def _build_user_message(
     question: str,
     *,
     page_url: str,
     page_title: str,
     page_type: str,
+    quiz_context: str = "",
 ) -> str:
-    return (
-        f"Контекст страницы:\n"
-        f"- page_type: {page_type or 'other'}\n"
-        f"- page_title: {page_title or '—'}\n"
-        f"- page_url: {page_url or '—'}\n\n"
-        f"Вопрос пользователя:\n{question.strip()}\n\n"
-        "Ответь строго в JSON по формату из системных инструкций."
+    parts = [
+        "Контекст страницы:",
+        f"- page_type: {page_type or 'other'}",
+        f"- page_title: {page_title or '—'}",
+        f"- page_url: {page_url or '—'}",
+    ]
+    if quiz_context.strip():
+        parts.extend(
+            ["", "Контекст ответов пользователя (мини-оценка / «Подробнее»):", quiz_context.strip()]
+        )
+    parts.extend(
+        ["", f"Вопрос пользователя:\n{question.strip()}", "", "Ответь строго в JSON по формату из системных инструкций."]
     )
+    return "\n".join(parts)
 
 
 def _extract_output_text(response: Any) -> str:
@@ -185,8 +228,30 @@ def _guess_document_number(filename: str) -> str:
     return match.group(1).upper().replace("-FZ", "-ФЗ") if match else ""
 
 
+def _normalize_source_token(value: str) -> str:
+    text = (value or "").lower().strip()
+    text = re.sub(r"\.md$", "", text)
+    text = re.sub(r"[-_/\\]+", " ", text)
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _source_dedupe_key(source: dict[str, str]) -> str:
+    """Stable key so FAQ.md and title variants collapse to one entry."""
+    doc = _normalize_source_token(source.get("document_number") or "")
+    if doc:
+        return f"doc:{doc}"
+    file_name = _normalize_source_token(source.get("file_name") or "")
+    if file_name:
+        return f"file:{file_name}"
+    title = _normalize_source_token(source.get("title") or "")
+    if title:
+        return f"title:{title}"
+    return ""
+
+
 def _extract_citation_sources(response: Any, answer_text: str) -> list[dict[str, str]]:
     """Извлечь источники из file_search annotations (fallback к JSON модели)."""
+    del answer_text  # reserved for future snippet matching
     sources: list[dict[str, str]] = []
     seen: set[str] = set()
 
@@ -199,26 +264,22 @@ def _extract_citation_sources(response: Any, answer_text: str) -> list[dict[str,
             for annotation in getattr(content, "annotations", []) or []:
                 ann_type = getattr(annotation, "type", None)
                 filename = ""
-                snippet = ""
-
-                if ann_type == "file_citation":
+                if ann_type in ("file_citation", "container_file_citation"):
                     filename = getattr(annotation, "filename", "") or ""
-                elif ann_type == "container_file_citation":
-                    filename = getattr(annotation, "filename", "") or ""
-
-                if not filename or filename in seen:
+                if not filename:
                     continue
-                seen.add(filename)
-
-                title = _filename_to_title(filename)
-                doc_num = _guess_document_number(filename)
-                sources.append({
-                    "title": title,
+                source = {
+                    "title": _filename_to_title(filename),
                     "file_name": filename,
-                    "document_number": doc_num,
+                    "document_number": _guess_document_number(filename),
                     "section": "",
-                    "snippet": snippet,
-                })
+                    "snippet": "",
+                }
+                key = _source_dedupe_key(source)
+                if not key or key in seen:
+                    continue
+                seen.add(key)
+                sources.append(source)
 
     return sources[:8]
 
@@ -238,34 +299,46 @@ def _normalize_sources(raw_sources: Any) -> list[dict[str, str]]:
     if not isinstance(raw_sources, list):
         return []
     out: list[dict[str, str]] = []
-    for item in raw_sources[:8]:
+    seen: set[str] = set()
+    for item in raw_sources[:12]:
         if not isinstance(item, dict):
             continue
-        out.append({
+        source = {
             "title": str(item.get("title") or "").strip()[:300],
             "file_name": str(item.get("file_name") or "").strip()[:200],
             "document_number": str(item.get("document_number") or "").strip()[:120],
             "section": str(item.get("section") or "").strip()[:200],
             "snippet": str(item.get("snippet") or "").strip()[:200],
-        })
-    return [s for s in out if any(s.values())]
+        }
+        if not any(source.values()):
+            continue
+        key = _source_dedupe_key(source)
+        if key and key in seen:
+            continue
+        if key:
+            seen.add(key)
+        out.append(source)
+        if len(out) >= 8:
+            break
+    return out
 
 
 def _merge_sources(
     json_sources: list[dict[str, str]],
     citation_sources: list[dict[str, str]],
 ) -> list[dict[str, str]]:
-    merged = list(json_sources)
-    known = {
-        (s.get("file_name") or s.get("title") or "").lower()
-        for s in merged
-    }
-    for source in citation_sources:
-        key = (source.get("file_name") or source.get("title") or "").lower()
-        if key and key not in known:
-            merged.append(source)
+    merged: list[dict[str, str]] = []
+    known: set[str] = set()
+    for source in list(json_sources) + list(citation_sources):
+        key = _source_dedupe_key(source)
+        if key and key in known:
+            continue
+        if key:
             known.add(key)
-    return merged[:8]
+        merged.append(source)
+        if len(merged) >= 8:
+            break
+    return merged
 
 
 def _normalize_recommendation(value: Any) -> str:
@@ -284,7 +357,15 @@ def _truncate_answer(text: str) -> str:
     text = (text or "").strip()
     if len(text) <= MAX_ANSWER_LEN:
         return text
-    return text[: MAX_ANSWER_LEN - 1].rstrip() + "…"
+    cut = text[:MAX_ANSWER_LEN]
+    for sep in (". ", "! ", "? ", ".\n", ";\n"):
+        idx = cut.rfind(sep)
+        if idx > MAX_ANSWER_LEN * 0.55:
+            return cut[: idx + 1].rstrip() + "…"
+    idx = cut.rfind(" ")
+    if idx > MAX_ANSWER_LEN * 0.7:
+        return cut[:idx].rstrip() + "…"
+    return cut.rstrip() + "…"
 
 
 def _error_response(session_id: str, question: str, reason: str, started: float) -> dict[str, Any]:
@@ -292,11 +373,15 @@ def _error_response(session_id: str, question: str, reason: str, started: float)
     logger.error(
         "rag_fail session=%s qlen=%d reason=%s ms=%d",
         session_id,
-        len(question),
+        len(question or ""),
         reason,
         elapsed,
     )
-    return {"status": "error", "message": USER_ERROR_MESSAGE}
+    return {
+        "status": "error",
+        "message": USER_ERROR_MESSAGE,
+        "reason": reason,
+    }
 
 
 def ask_rag(
@@ -306,6 +391,7 @@ def ask_rag(
     page_url: str = "",
     page_title: str = "",
     page_type: str = "other",
+    quiz_context: str = "",
 ) -> dict[str, Any]:
     started = time.perf_counter()
 
@@ -344,15 +430,18 @@ def ask_rag(
     model = os.getenv("OPENAI_MODEL", "gpt-4.1-mini").strip() or "gpt-4.1-mini"
     if not vector_store_id:
         return _error_response(session_id, question, "missing_vector_store_id", started)
+    if not os.getenv("OPENAI_API_KEY", "").strip():
+        return _error_response(session_id, question, "missing_api_key", started)
 
     try:
-        client = create_openai_client()
+        client = get_openai_client()
         system_prompt = load_system_prompt()
         user_message = _build_user_message(
             question,
             page_url=page_url,
             page_title=page_title,
             page_type=page_type,
+            quiz_context=quiz_context,
         )
 
         response = client.responses.create(
@@ -407,6 +496,10 @@ def ask_rag(
         return _error_response(session_id, question, "json_parse_error", started)
     except (APIConnectionError, APITimeoutError):
         return _error_response(session_id, question, "openai_unavailable", started)
+    except RuntimeError as exc:
+        if "OPENAI_API_KEY" in str(exc):
+            return _error_response(session_id, question, "missing_api_key", started)
+        return _error_response(session_id, question, type(exc).__name__, started)
     except Exception as exc:
         reason = type(exc).__name__
         if "timeout" in str(exc).lower():

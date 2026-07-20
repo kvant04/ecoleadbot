@@ -1,0 +1,11 @@
+# Add to Caddyfile (n8n stack). Caddy already uses ports 80/443.
+# After DNS: elb.ecolusspb.ru -> 45.8.124.44
+
+elb.ecolusspb.ru {
+    reverse_proxy ecoleadbot:8000
+}
+
+# Контейнер ecoleadbot подключается к сети n8n_default скриптом deploy/vps_update.sh
+# (если сеть уже есть). В docker-compose.yml сеть не объявлена как external —
+# локальный `docker compose up` работает без n8n.
+# Then: docker restart n8n-caddy-1

@@ -1,0 +1,19 @@
+services:
+  ecoleadbot:
+    build: .
+    container_name: ecoleadbot
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    environment:
+      HOST: 0.0.0.0
+      PORT: 8000
+    # Только сеть default — поднимается без n8n.
+    # Подключение к n8n_default (Caddy → elb) делает deploy/vps_update.sh после up,
+    # если сеть уже есть на хосте.
+
+networks:
+  default:
+    name: ecoleadbot_default

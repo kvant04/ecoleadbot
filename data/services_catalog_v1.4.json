@@ -1,0 +1,1581 @@
+{
+  "version": "1.4",
+  "updated": "2026-07-10",
+  "source": "EcoLeadBot-Scope-Freeze-v1.4.md + ecolusspb.ru",
+  "decisions": {
+    "branch_depth": "all_32_with_2_3_questions",
+    "mini_assessment_texts": "kb_templates",
+    "rag_podrobnee": "hybrid_kb_template_then_rag_v1.5.8",
+    "ekosbor_direction": "separate_6th_direction",
+    "szz_direction": "separate_7th_direction",
+    "document_branch_flags": "needs_nvos_category_in_branch | skip_sites_in_branch | registry_instead_of_category"
+  },
+  "directions": [
+    {
+      "id": "otkhody",
+      "title": "ОТХОДЫ",
+      "order": 1
+    },
+    {
+      "id": "vozduh",
+      "title": "ВОЗДУХ",
+      "order": 2
+    },
+    {
+      "id": "voda",
+      "title": "ВОДА",
+      "order": 3
+    },
+    {
+      "id": "nvos",
+      "title": "НВОС: учёт, отчётность и экосопровождение",
+      "order": 4,
+      "ux_hint": "Сначала постановка на учёт, затем отчётность или комплексное экосопровождение"
+    },
+    {
+      "id": "ker_gee",
+      "title": "КЭР и ГосЭкоЭкспертиза (ГЭЭ)",
+      "order": 5
+    },
+    {
+      "id": "ekosbor",
+      "title": "Экологический сбор",
+      "order": 6
+    },
+    {
+      "id": "szz",
+      "title": "СЗЗ",
+      "order": 7,
+      "ux_hint": "Проект санитарно-защитной зоны — для новых объектов, реконструкции или изменения границ"
+    }
+  ],
+  "services": [
+    {
+      "id": "dogovor-regional-operator",
+      "direction": "otkhody",
+      "title": "Договор с региональным оператором",
+      "site_urls": [
+        "https://ecolusspb.ru/services/pomoshch-v-zaklyuchenii-dogovora-s-regionalnym-operatorom/"
+      ],
+      "kb_slug": "dogovor-regional-operator",
+      "service_type": "standalone",
+      "related_services": [
+        "inventarizaciya-othodov",
+        "pasport-othodov"
+      ],
+      "qualification_questions": []
+    },
+    {
+      "id": "pnool",
+      "direction": "otkhody",
+      "title": "Проект НООЛР",
+      "site_urls": [
+        "https://ecolusspb.ru/services/pnoolr/"
+      ],
+      "kb_slug": "pnoolr",
+      "service_type": "standalone",
+      "related_services": [
+        "inventarizaciya-othodov",
+        "pasport-othodov",
+        "vedenie-zhurnala-othodov"
+      ],
+      "qualification_questions": [
+        {
+          "id": "pnool_waste_count",
+          "text": "Сколько наименований отходов (примерно)?",
+          "type": "single",
+          "options": [
+            "1–3",
+            "4–10",
+            "Более 10",
+            "Не знаю"
+          ]
+        },
+        {
+          "id": "pnool_passports_needed",
+          "text": "Нужны ли паспорта отходов (ПО)?",
+          "type": "single",
+          "options": [
+            "Да",
+            "Нет",
+            "Не знаю"
+          ]
+        },
+        {
+          "id": "pnool_deadline",
+          "text": "Есть срок или предписание?",
+          "type": "single",
+          "options": [
+            "Да, срочно",
+            "Планово",
+            "Пока без срока"
+          ]
+        }
+      ],
+      "needs_nvos_category_in_branch": true
+    },
+    {
+      "id": "inventarizaciya-othodov",
+      "direction": "otkhody",
+      "title": "Инвентаризация отходов",
+      "site_urls": [
+        "https://ecolusspb.ru/services/inventarizaciya-otxodov/"
+      ],
+      "kb_slug": "inventarizaciya-othodov",
+      "service_type": "standalone",
+      "related_services": [
+        "pasport-othodov",
+        "pnool",
+        "vedenie-zhurnala-othodov"
+      ],
+      "qualification_questions": [
+        {
+          "id": "sites_count",
+          "text": "Сколько площадок (адресов)?",
+          "type": "single",
+          "options": [
+            "1",
+            "2–3",
+            "4 и более",
+            "Не знаю"
+          ]
+        },
+        {
+          "id": "inv_activity_desc",
+          "text": "Чем занимаетесь на объекте?",
+          "type": "text",
+          "placeholder": "Например: производим химикаты, автосервис, склад…",
+          "max_length": 500
+        }
+      ]
+    },
+    {
+      "id": "pasport-othodov",
+      "direction": "otkhody",
+      "title": "Паспорт отхода 1–4 класса",
+      "site_urls": [
+        "https://ecolusspb.ru/services/pasport_othodov_1-4_class/"
+      ],
+      "kb_slug": "pasport-othodov",
+      "service_type": "standalone",
+      "related_services": [
+        "inventarizaciya-othodov",
+        "vedenie-zhurnala-othodov"
+      ],
+      "qualification_questions": [
+        {
+          "id": "passport_count",
+          "text": "Сколько видов отходов нужно паспортизировать?",
+          "type": "single",
+          "options": [
+            "1",
+            "2–5",
+            "Более 5",
+            "Не знаю"
+          ]
+        },
+        {
+          "id": "sites_count",
+          "text": "Сколько площадок (адресов)?",
+          "type": "single",
+          "options": [
+            "1",
+            "2–3",
+            "4 и более",
+            "Не знаю"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tu-othody",
+      "direction": "otkhody",
+      "title": "Разработка технических условий (ТУ)",
+      "site_urls": [
+        "https://ecolusspb.ru/services/tehnicheskie_usloviya_tu/"
+      ],
+      "kb_slug": "tu-othody",
+      "service_type": "standalone",
+      "related_services": [
+        "pasport-othodov",
+        "inventarizaciya-othodov"
+      ],
+      "qualification_questions": [
+        {
+          "id": "tu_count",
+          "text": "Сколько технических условий (ТУ) нужно разработать?",
+          "type": "single",
+          "options": [
+            "1",
+            "2–3",
+            "4 и более",
+            "Не знаю"
+          ]
+        },
+        {
+          "id": "tu_waste_product",
+          "text": "Какие отходы переводите в продукцию?",
+          "type": "text",
+          "placeholder": "Укажите виды отходов или кратко опишите процесс",
+          "max_length": 500
+        }
+      ],
+      "skip_sites_in_branch": true
+    },
+    {
+      "id": "licensia-othody-transport",
+      "direction": "otkhody",
+      "title": "Лицензия на обращение с отходами 1–4 классов",
+      "site_urls": [
+        "https://ecolusspb.ru/services/licensia-na-deyatelnost-s-opasnimi-othodami/"
+      ],
+      "kb_slug": "licensia-othody-transport",
+      "service_type": "standalone",
+      "related_services": [
+        "inventarizaciya-othodov",
+        "pasport-othodov"
+      ],
+      "qualification_questions": [
+        {
+          "id": "lic_activity_type",
+          "text": "Какой вид деятельности планируете лицензировать?",
+          "type": "single",
+          "options": [
+            "Транспортирование отходов",
+            "Обработка отходов",
+            "Утилизация отходов",
+            "Размещение отходов",
+            "Обезвреживание отходов",
+            "Несколько видов"
+          ]
+        },
+        {
+          "id": "lic_assets",
+          "text": "Что уже есть для получения лицензии?",
+          "type": "multi",
+          "options": [
+            "Стоянка",
+            "Транспорт / спецтехника",
+            "Оборудование / площадки",
+            "Пока ничего нет"
+          ]
+        },
+        {
+          "id": "lic_waste_types_count",
+          "text": "Сколько наименований отходов планируете включить в лицензию?",
+          "type": "single",
+          "options": [
+            "До 100",
+            "От 100 до 500",
+            "Более 500",
+            "Не знаю"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "ekologicheskiy-sbor-rop",
+      "direction": "ekosbor",
+      "title": "Экологический сбор за товары и упаковку",
+      "site_urls": [
+        "https://ecolusspb.ru/services/ekologicheskiy_sbor_gos/"
+      ],
+      "kb_slug": "ekologicheskiy-sbor",
+      "service_type": "standalone",
+      "related_services": [
+        "audit-diagnostika"
+      ],
+      "qualification_questions": [
+        {
+          "id": "rop_role",
+          "text": "Вы производитель/импортёр товаров или упаковки на территории РФ?",
+          "type": "single",
+          "options": [
+            "Производитель",
+            "Импортёр",
+            "И то и другое",
+            "Нужно проверить, обязаны ли платить экосбор"
+          ]
+        },
+        {
+          "id": "rop_reporting",
+          "text": "Отчётность по экосбору сдавалась ранее?",
+          "type": "single",
+          "options": [
+            "Да",
+            "Нет"
+          ]
+        },
+        {
+          "id": "rop_deadline",
+          "text": "Как срочно вам необходимо выполнить работу?",
+          "type": "single",
+          "options": [
+            "Да, срочно",
+            "Планово",
+            "Пока без срока"
+          ]
+        }
+      ],
+      "skip_sites_in_branch": true
+    },
+    {
+      "id": "plan-nmu",
+      "direction": "vozduh",
+      "title": "Мероприятия при НМУ",
+      "site_urls": [
+        "https://ecolusspb.ru/services/plan_meropriyatiy_pri_nmu/"
+      ],
+      "kb_slug": "plan-nmu",
+      "service_type": "standalone",
+      "related_services": [
+        "pdv-ndv",
+        "iiv-vybrosy"
+      ],
+      "qualification_questions": [
+        {
+          "id": "nmu_has_pdv",
+          "text": "Есть действующий проект ПДВ / учёт выбросов?",
+          "type": "single",
+          "options": [
+            "Да",
+            "Нет"
+          ]
+        },
+        {
+          "id": "sites_count",
+          "text": "Сколько площадок (адресов)?",
+          "type": "single",
+          "options": [
+            "1",
+            "2–3",
+            "4 и более",
+            "Не знаю"
+          ]
+        },
+        {
+          "id": "iiv_status",
+          "text": "Инвентаризация источников выбросов уже проводилась?",
+          "type": "single",
+          "options": [
+            "Да",
+            "Нет"
+          ]
+        },
+        {
+          "id": "nvos_registry_status",
+          "text": "Объект поставлен на учёт как объект НВОС?",
+          "type": "single",
+          "options": [
+            "Да",
+            "Нет"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "iiv-vybrosy",
+      "direction": "vozduh",
+      "title": "Инвентаризация источников выбросов",
+      "site_urls": [
+        "https://ecolusspb.ru/services/inventarizaciya-vibrosov/"
+      ],
+      "kb_slug": "iiv-vybrosy",
+      "service_type": "standalone",
+      "related_services": [
+        "pdv-ndv",
+        "pasport-gou"
+      ],
+      "qualification_questions": [
+        {
+          "id": "iiv_activity_desc",
+          "text": "Чем занимаетесь на объекте?",
+          "type": "text",
+          "placeholder": "Например: производство, автосервис, склад…",
+          "max_length": 500
+        },
+        {
+          "id": "iiv_sources",
+          "text": "Примерное количество источников выбросов?",
+          "type": "single",
+          "options": [
+            "1–3",
+            "4–10",
+            "Более 10",
+            "Не знаю"
+          ]
+        },
+        {
+          "id": "iiv_first_time",
+          "text": "Инвентаризация впервые или для обновления?",
+          "type": "single",
+          "options": [
+            "Впервые",
+            "Обновление",
+            "Не знаю"
+          ]
+        },
+        {
+          "id": "sites_count",
+          "text": "Сколько площадок (адресов)?",
+          "type": "single",
+          "options": [
+            "1",
+            "2–3",
+            "4 и более",
+            "Не знаю"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "szz",
+      "direction": "szz",
+      "title": "Проект санитарно-защитной зоны (СЗЗ)",
+      "site_urls": [
+        "https://ecolusspb.ru/services/szz/"
+      ],
+      "kb_slug": "szz",
+      "service_type": "standalone",
+      "related_services": [
+        "pdv-ndv",
+        "iiv-vybrosy"
+      ],
+      "qualification_questions": [
+        {
+          "id": "sites_count",
+          "text": "Сколько площадок (адресов)?",
+          "type": "single",
+          "options": [
+            "1",
+            "2–3",
+            "4 и более",
+            "Не знаю"
+          ]
+        },
+        {
+          "id": "szz_land_ownership",
+          "text": "Земельный участок в собственности или в аренде?",
+          "type": "single",
+          "options": [
+            "Собственность",
+            "Аренда",
+            "Не знаю"
+          ]
+        },
+        {
+          "id": "szz_enterprises_count",
+          "text": "На участке одно предприятие или несколько?",
+          "type": "single",
+          "options": [
+            "Одно",
+            "Несколько",
+            "Не знаю"
+          ]
+        }
+      ],
+      "ui_note": "Вид деятельности берётся из основного сценария (если пройден) или с экрана «Вид деятельности»"
+    },
+    {
+      "id": "pasport-gou",
+      "direction": "vozduh",
+      "title": "Паспорт ГОУ",
+      "site_urls": [
+        "https://ecolusspb.ru/services/gou-pasporta-gazoochistnix-ustanovok-pgu/"
+      ],
+      "kb_slug": "pasport-gou",
+      "service_type": "standalone",
+      "related_services": [
+        "iiv-vybrosy",
+        "pdv-ndv"
+      ],
+      "qualification_questions": [
+        {
+          "id": "gou_docs",
+          "text": "Есть документы на газоочистное / пылеулавливающее оборудование?",
+          "type": "single",
+          "options": [
+            "Да",
+            "Частично",
+            "Нет",
+            "Не знаю"
+          ]
+        },
+        {
+          "id": "gou_measurements",
+          "text": "Проводились замеры эффективности / обследования?",
+          "type": "single",
+          "options": [
+            "Да",
+            "Нет"
+          ]
+        },
+        {
+          "id": "gou_units",
+          "text": "Сколько установок нужно паспортизировать?",
+          "type": "single",
+          "options": [
+            "1",
+            "2–5",
+            "Более 5",
+            "Не знаю"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pdv-ndv",
+      "direction": "vozduh",
+      "title": "Проект ПДВ/НДВ",
+      "site_urls": [
+        "https://ecolusspb.ru/services/pdv/"
+      ],
+      "kb_slug": "pdv-ndv",
+      "service_type": "standalone",
+      "related_services": [
+        "iiv-vybrosy",
+        "szz",
+        "plan-nmu"
+      ],
+      "qualification_questions": [
+        {
+          "id": "sites_count",
+          "text": "Сколько площадок (адресов)?",
+          "type": "single",
+          "options": [
+            "1",
+            "2–3",
+            "4 и более",
+            "Не знаю"
+          ]
+        },
+        {
+          "id": "nvos_registry_status",
+          "text": "Объект поставлен на учёт как объект НВОС?",
+          "type": "single",
+          "options": [
+            "Да",
+            "Нет"
+          ]
+        },
+        {
+          "id": "iiv_status",
+          "text": "Инвентаризация источников выбросов уже проводилась?",
+          "type": "single",
+          "options": [
+            "Да",
+            "Нет"
+          ]
+        },
+        {
+          "id": "pdv_deadline",
+          "text": "Есть предписание или срок согласования?",
+          "type": "single",
+          "options": [
+            "Да, срочно",
+            "Планово",
+            "Пока без срока"
+          ]
+        }
+      ],
+      "needs_nvos_category_in_branch": true
+    },
+    {
+      "id": "nds",
+      "direction": "voda",
+      "title": "Проект НДС",
+      "site_urls": [
+        "https://ecolusspb.ru/services/nds/"
+      ],
+      "kb_slug": "nds",
+      "service_type": "standalone",
+      "related_services": [
+        "bvv",
+        "deklaraciya-stochnyh-vod"
+      ],
+      "qualification_questions": [
+        {
+          "id": "nds_discharge_type",
+          "text": "Куда идёт сброс сточных вод?",
+          "type": "single",
+          "options": [
+            "В канализацию (ЦСВ / Водоканал)",
+            "Собственный сброс (река, озеро, канава)",
+            "Не знаю"
+          ]
+        },
+        {
+          "id": "discharge_sources_count",
+          "text": "Сколько выпусков (точек сброса)?",
+          "type": "single",
+          "options": [
+            "1",
+            "2–3",
+            "4 и более",
+            "Не знаю"
+          ]
+        },
+        {
+          "id": "sites_count",
+          "text": "Сколько площадок (адресов)?",
+          "type": "single",
+          "options": [
+            "1",
+            "2–3",
+            "4 и более",
+            "Не знаю"
+          ]
+        },
+        {
+          "id": "wastewater_type",
+          "text": "Какие сточные воды?",
+          "type": "multi",
+          "options": [
+            "Промсток",
+            "Ливневая (талая и ливневая с площадки)",
+            "Хозяйственно-бытовые",
+            "Смешанная",
+            "Не знаю"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "zso",
+      "direction": "voda",
+      "title": "Проект ЗСО",
+      "site_urls": [
+        "https://ecolusspb.ru/services/zso/"
+      ],
+      "kb_slug": "zso",
+      "service_type": "standalone",
+      "related_services": [
+        "licensia-nedra-voda",
+        "bvv"
+      ],
+      "qualification_questions": [
+        {
+          "id": "zso_water_source",
+          "text": "Источник водоснабжения?",
+          "type": "single",
+          "options": [
+            "Скважина / артезианская",
+            "Поверхностный водозабор",
+            "Комбинированный",
+            "Не знаю"
+          ]
+        },
+        {
+          "id": "zso_wells_count",
+          "text": "Сколько скважин / точек водозабора?",
+          "type": "single",
+          "options": [
+            "1",
+            "2–3",
+            "4 и более",
+            "Не знаю"
+          ]
+        },
+        {
+          "id": "sites_count",
+          "text": "Сколько площадок (адресов)?",
+          "type": "single",
+          "options": [
+            "1",
+            "2–3",
+            "4 и более",
+            "Не знаю"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "bvv",
+      "direction": "voda",
+      "title": "Баланс водопотребления и водоотведения",
+      "site_urls": [
+        "https://ecolusspb.ru/services/bvv/"
+      ],
+      "kb_slug": "bvv",
+      "service_type": "standalone",
+      "related_services": [
+        "nds",
+        "deklaraciya-stochnyh-vod"
+      ],
+      "qualification_questions": [
+        {
+          "id": "bvv_metering",
+          "text": "Есть приборы учёта воды?",
+          "type": "single",
+          "options": [
+            "Да",
+            "Частично",
+            "Нет / не знаю"
+          ]
+        },
+        {
+          "id": "bvv_discharge",
+          "text": "Сброс в ЦСВ или собственный?",
+          "type": "single",
+          "options": [
+            "ЦСВ / Водоканал",
+            "Собственный сброс",
+            "Оба варианта",
+            "Не знаю"
+          ]
+        },
+        {
+          "id": "discharge_sources_count",
+          "text": "Сколько выпусков (точек сброса)?",
+          "type": "single",
+          "options": [
+            "1",
+            "2–3",
+            "4 и более",
+            "Не знаю"
+          ]
+        },
+        {
+          "id": "sites_count",
+          "text": "Сколько площадок (адресов)?",
+          "type": "single",
+          "options": [
+            "1",
+            "2–3",
+            "4 и более",
+            "Не знаю"
+          ]
+        },
+        {
+          "id": "wastewater_type",
+          "text": "Какие сточные воды?",
+          "type": "multi",
+          "options": [
+            "Промсток",
+            "Ливневая (талая и ливневая с площадки)",
+            "Хозяйственно-бытовые",
+            "Смешанная",
+            "Не знаю"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sanepid-vodny-obekt",
+      "direction": "voda",
+      "title": "Санэпидзаключение на водный объект",
+      "site_urls": [
+        "https://ecolusspb.ru/services/sanitarno-epidemiologicheskoe-zaklyuchenie-na-vodnyy-obekt/"
+      ],
+      "kb_slug": "sanepid-vodny-obekt",
+      "service_type": "standalone",
+      "related_services": [
+        "zso",
+        "licensia-nedra-voda"
+      ],
+      "qualification_questions": [
+        {
+          "id": "sanepid_pkk",
+          "text": "Есть программа производственного контроля качества питьевой воды (ПКК)?",
+          "type": "single",
+          "options": [
+            "Да",
+            "Нет",
+            "Не знаю"
+          ]
+        },
+        {
+          "id": "sanepid_zso_project",
+          "text": "Есть согласованный проект санитарной охраны водозабора (ЗСО)?",
+          "type": "single",
+          "options": [
+            "Да",
+            "Нет",
+            "Не знаю"
+          ]
+        },
+        {
+          "id": "sanepid_water_protocols",
+          "text": "Есть протоколы анализов качества воды?",
+          "type": "single",
+          "options": [
+            "Да",
+            "Нет",
+            "Частично / не знаю"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "deklaraciya-stochnyh-vod",
+      "direction": "voda",
+      "title": "Декларация о составе и свойствах сточных вод",
+      "site_urls": [
+        "https://ecolusspb.ru/services/deklaratsiya-o-vode/"
+      ],
+      "kb_slug": "deklaraciya-stochnyh-vod",
+      "service_type": "standalone",
+      "related_services": [
+        "nds",
+        "bvv"
+      ],
+      "qualification_questions": [
+        {
+          "id": "dsv_discharge_point",
+          "text": "Куда идёт сброс сточных вод?",
+          "hint": "Если сброс более 30 м³/сут.",
+          "type": "single",
+          "options": [
+            "В ЦСВ (канализация Водоканала)",
+            "Собственный водный объект",
+            "Не знаю"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "licensia-nedra-voda",
+      "direction": "voda",
+      "title": "Лицензия на воду (недра)",
+      "site_urls": [
+        "https://ecolusspb.ru/services/licensia_na_nedra_voda/"
+      ],
+      "kb_slug": "licensia-nedra-voda",
+      "service_type": "complex",
+      "related_services": [],
+      "related_services_hint": "По ситуации: проект геологического изучения недр, общественные обсуждения, полевые испытания — не отдельные пункты каталога",
+      "qualification_questions": [
+        {
+          "id": "lic_water_purpose",
+          "text": "Цель забора подземных вод?",
+          "type": "single",
+          "options": [
+            "Питьевое/хозяйственное",
+            "Технологическое",
+            "Комбинированное",
+            "Не знаю"
+          ]
+        },
+        {
+          "id": "lic_water_status",
+          "text": "Скважина/водозабор уже есть или планируется?",
+          "type": "single",
+          "options": [
+            "Уже эксплуатируется",
+            "Планируется",
+            "Не знаю"
+          ]
+        },
+        {
+          "id": "lic_water_wells_count",
+          "text": "Сколько скважин?",
+          "type": "single",
+          "options": [
+            "1",
+            "2–3",
+            "4 и более",
+            "Не знаю"
+          ]
+        },
+        {
+          "id": "sites_count",
+          "text": "Сколько площадок (адресов)?",
+          "type": "single",
+          "options": [
+            "1",
+            "2–3",
+            "4 и более",
+            "Не знаю"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "postanovka-nvos",
+      "direction": "nvos",
+      "title": "Постановка на учёт объектов НВОС",
+      "site_urls": [
+        "https://ecolusspb.ru/services/postanovka_na_uchet_obyektov_NVOS/"
+      ],
+      "kb_slug": "postanovka-nvos",
+      "service_type": "standalone",
+      "related_services": [
+        "pek",
+        "plata-nvos",
+        "otchet-2tp",
+        "ekosoprovozhdenie"
+      ],
+      "qualification_questions": [
+        {
+          "id": "nvos_registry",
+          "text": "Объект уже стоит на учёте в реестре НВОС?",
+          "type": "single",
+          "options": [
+            "Нет",
+            "Да",
+            "Не знаю"
+          ]
+        },
+        {
+          "id": "nvos_impacts",
+          "text": "Что есть на объекте?",
+          "type": "multi",
+          "options": [
+            "Выбросы",
+            "Сбросы",
+            "Отходы",
+            "Несколько видов воздействия"
+          ]
+        },
+        {
+          "id": "sites_count",
+          "text": "Сколько площадок (адресов)?",
+          "type": "single",
+          "options": [
+            "1",
+            "2–3",
+            "4 и более",
+            "Не знаю"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "pek",
+      "direction": "nvos",
+      "title": "Производственный экологический контроль (ПЭК)",
+      "site_urls": [
+        "https://ecolusspb.ru/services/proizvodstvenniy_kontrol_pek/"
+      ],
+      "kb_slug": "pek",
+      "service_type": "standalone",
+      "related_services": [
+        "postanovka-nvos",
+        "otchet-2tp"
+      ],
+      "qualification_questions": [
+        {
+          "id": "pek_exists",
+          "text": "Программа ПЭК уже есть?",
+          "type": "single",
+          "options": [
+            "Нет, нужна разработка",
+            "Есть, нужно обновить",
+            "Не знаю"
+          ]
+        },
+        {
+          "id": "pek_nvos_cat",
+          "text": "Категория объекта НВОС?",
+          "type": "single",
+          "options": [
+            "I",
+            "II",
+            "III",
+            "IV",
+            "Не знаю"
+          ]
+        }
+      ],
+      "needs_nvos_category_in_branch": true
+    },
+    {
+      "id": "plata-nvos",
+      "direction": "nvos",
+      "title": "Расчёт платы за НВОС",
+      "site_urls": [
+        "https://ecolusspb.ru/services/plata_za_negativnoe_vozdeistvie/"
+      ],
+      "kb_slug": "plata-nvos",
+      "service_type": "standalone",
+      "related_services": [
+        "otchet-2tp",
+        "postanovka-nvos"
+      ],
+      "qualification_questions": [
+        {
+          "id": "plata_on_registry",
+          "text": "Объект на учёте НВОС?",
+          "type": "single",
+          "options": [
+            "Да",
+            "Нет"
+          ]
+        },
+        {
+          "id": "plata_period",
+          "text": "За какой период нужен расчёт?",
+          "type": "single",
+          "options": [
+            "Текущий год",
+            "Прошлый год / доначисление",
+            "Несколько периодов",
+            "Не знаю"
+          ]
+        }
+      ],
+      "needs_nvos_category_in_branch": true
+    },
+    {
+      "id": "otchet-2tp",
+      "direction": "nvos",
+      "title": "Отчётность 2-ТП (отходы, воздух, водхоз)",
+      "site_urls": [
+        "https://ecolusspb.ru/services/otchet_2tp/"
+      ],
+      "kb_slug": "otchet-2tp",
+      "service_type": "standalone",
+      "related_services": [
+        "ekosoprovozhdenie",
+        "plata-nvos",
+        "vedenie-zhurnala-othodov"
+      ],
+      "qualification_questions": [
+        {
+          "id": "tp_sections",
+          "text": "Какие разделы 2-ТП нужны?",
+          "type": "multi",
+          "options": [
+            "Отходы",
+            "Воздух",
+            "Водохозяйство",
+            "Не знаю — нужна помощь"
+          ]
+        },
+        {
+          "id": "tp_deadline",
+          "text": "Есть срок сдачи?",
+          "type": "single",
+          "options": [
+            "Да, срочно",
+            "Планово",
+            "Пока без срока"
+          ]
+        }
+      ],
+      "needs_nvos_category_in_branch": true
+    },
+    {
+      "id": "deklaraciya-vos",
+      "direction": "nvos",
+      "title": "Декларация о воздействии на окружающую среду (ВОС)",
+      "site_urls": [
+        "https://ecolusspb.ru/services/deklaratsiya-o-vos/"
+      ],
+      "kb_slug": "deklaraciya-vos",
+      "service_type": "standalone",
+      "related_services": [
+        "postanovka-nvos",
+        "pdv-ndv",
+        "nds"
+      ],
+      "qualification_questions": [
+        {
+          "id": "sites_count",
+          "text": "Сколько площадок (адресов)?",
+          "type": "single",
+          "options": [
+            "1",
+            "2–3",
+            "4 и более",
+            "Не знаю"
+          ]
+        },
+        {
+          "id": "vos_docs",
+          "text": "Есть проекты ПДВ/НДС или иная разрешительная документация?",
+          "type": "single",
+          "options": [
+            "Да",
+            "Нет",
+            "Частично / не знаю"
+          ]
+        }
+      ],
+      "ui_note": "Декларация о воздействии (ВОС) — для объектов II категории НВОС"
+    },
+    {
+      "id": "kadastr-othodov",
+      "direction": "nvos",
+      "title": "Отчёт в региональный кадастр отходов",
+      "site_urls": [
+        "https://ecolusspb.ru/services/otchet_ob_obrazovanii_othodov/"
+      ],
+      "kb_slug": "kadastr-othodov",
+      "service_type": "standalone",
+      "related_services": [
+        "vedenie-zhurnala-othodov",
+        "dogovor-regional-operator"
+      ],
+      "qualification_questions": [
+        {
+          "id": "kadastr_operator",
+          "text": "Договор с региональным оператором заключён?",
+          "type": "single",
+          "options": [
+            "Да",
+            "Нет"
+          ]
+        },
+        {
+          "id": "kadastr_period",
+          "text": "За какой период нужен отчёт?",
+          "type": "single",
+          "options": [
+            "Текущий",
+            "Прошлый / доначисление",
+            "Не знаю"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "vedenie-zhurnala-othodov",
+      "direction": "nvos",
+      "title": "Ведение журнала отходов",
+      "site_urls": [
+        "https://ecolusspb.ru/services/vedenie_jurnalov_othodov/"
+      ],
+      "kb_slug": "vedenie-zhurnala-othodov",
+      "service_type": "standalone",
+      "related_services": [
+        "pasport-othodov",
+        "inventarizaciya-othodov",
+        "kadastr-othodov"
+      ],
+      "qualification_questions": [
+        {
+          "id": "journal_passports",
+          "text": "Паспорта отходов и инвентаризация есть?",
+          "type": "single",
+          "options": [
+            "Да",
+            "Нет",
+            "Частично / не знаю"
+          ]
+        },
+        {
+          "id": "journal_mode",
+          "text": "Нужна разовая настройка или постоянное ведение?",
+          "type": "single",
+          "options": [
+            "Разово настроить",
+            "Постоянное сопровождение",
+            "Не знаю"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "audit-diagnostika",
+      "direction": "nvos",
+      "title": "Экологический аудит / быстрая диагностика",
+      "site_urls": [
+        "https://ecolusspb.ru/services/audit-po-ekologii/"
+      ],
+      "kb_slug": "audit-diagnostika",
+      "kb_aliases": [
+        "bystraya-diagnostika"
+      ],
+      "service_type": "standalone",
+      "related_services": [
+        "ekosoprovozhdenie",
+        "konsultaciya-ekologa"
+      ],
+      "qualification_questions": [
+        {
+          "id": "audit_trigger",
+          "text": "Почему обратились?",
+          "type": "single",
+          "options": [
+            "Предстоящая проверка",
+            "Предписание / риск штрафа",
+            "Запуск/новый объект",
+            "Общая проверка «что нужно»"
+          ]
+        },
+        {
+          "id": "audit_ecologist",
+          "text": "Есть штатный эколог?",
+          "type": "single",
+          "options": [
+            "Да",
+            "Нет",
+            "Аутсорс / не знаю"
+          ]
+        }
+      ],
+      "skip_sites_in_branch": true
+    },
+    {
+      "id": "ekosoprovozhdenie",
+      "direction": "nvos",
+      "title": "Экологическое сопровождение",
+      "site_urls": [
+        "https://ecolusspb.ru/services/personal-ecolog/",
+        "https://ecolusspb.ru/services/ekologicheskoe-soprovozhdenie-dlya-nepishchevogo-proizvodstva/",
+        "https://ecolusspb.ru/services/ekologicheskoe-soprovozhdenie-dlya-stroitelstva/"
+      ],
+      "kb_slug": "ekosoprovozhdenie",
+      "service_type": "complex",
+      "related_services": [
+        "postanovka-nvos",
+        "otchet-2tp",
+        "pek",
+        "plata-nvos"
+      ],
+      "qualification_questions": [
+        {
+          "id": "eco_on_registry",
+          "text": "Объект на учёте НВОС?",
+          "type": "single",
+          "options": [
+            "Да",
+            "Нет"
+          ]
+        },
+        {
+          "id": "eco_tariff",
+          "text": "Какой тариф сопровождения ближе?",
+          "type": "single",
+          "options": [
+            "ЭКОНОМ (от 6 000 ₽/мес)",
+            "ОПТИМУМ (от 8 000 ₽/мес)",
+            "ПРЕМИУМ (от 12 000 ₽/мес)",
+            "Эколог на предприятии (от 40 000 ₽/мес)",
+            "Не знаю / подобрать при звонке"
+          ]
+        },
+        {
+          "id": "eco_sites",
+          "text": "Сколько площадок/объектов?",
+          "type": "single",
+          "options": [
+            "1",
+            "2–3",
+            "4 и более",
+            "Не знаю"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "konsultaciya-ekologa",
+      "direction": "nvos",
+      "title": "Консультация ведущего эколога",
+      "site_urls": [
+        "https://ecolusspb.ru/services/konsultatsiya-ot-vedushchego-ekologa/"
+      ],
+      "kb_slug": "konsultaciya-ekologa",
+      "service_type": "bridge",
+      "related_services": [
+        "audit-diagnostika",
+        "ekosoprovozhdenie"
+      ],
+      "qualification_questions": [
+        {
+          "id": "consult_topic",
+          "text": "Кратко: с чем нужна помощь?",
+          "type": "text",
+          "max_length": 500
+        },
+        {
+          "id": "consult_urgency",
+          "text": "Насколько срочно?",
+          "type": "single",
+          "options": [
+            "Сегодня–завтра",
+            "На этой неделе",
+            "Планово"
+          ]
+        }
+      ],
+      "skip_sites_in_branch": true
+    },
+    {
+      "id": "obuchenie-ekologiya",
+      "direction": "nvos",
+      "title": "Обучение по экологии",
+      "site_urls": [
+        "https://ecolusspb.ru/dopuslugi/distantsionnoe-obuchenie-po-ohrane-truda/"
+      ],
+      "kb_slug": "obuchenie-ekologiya",
+      "service_type": "standalone",
+      "ui_note": "Корочки или реальный курс",
+      "related_services": [
+        "pek"
+      ],
+      "qualification_questions": [
+        {
+          "id": "train_count",
+          "text": "Сколько сотрудников нужно обучить?",
+          "type": "single",
+          "options": [
+            "1–5",
+            "6–20",
+            "Более 20",
+            "Не знаю"
+          ]
+        },
+        {
+          "id": "train_program",
+          "text": "Какая программа обучения нужна?",
+          "type": "multi",
+          "options": [
+            "112 часов — ответственный за обращение с отходами",
+            "72 часа — для руководителя",
+            "Авторский курс «Базовая экологическая отчётность»",
+            "Другое / не знаю"
+          ]
+        }
+      ],
+      "skip_sites_in_branch": true
+    },
+    {
+      "id": "ker",
+      "direction": "ker_gee",
+      "title": "Комплексное экологическое разрешение (КЭР)",
+      "site_urls": [
+        "https://ecolusspb.ru/services/ekologicheskoe_razereshenie/"
+      ],
+      "kb_slug": "ker",
+      "service_type": "complex",
+      "related_services": [
+        "gee",
+        "postanovka-nvos",
+        "pdv-ndv",
+        "nds"
+      ],
+      "qualification_questions": [
+        {
+          "id": "ker_object_stage",
+          "text": "Объект уже эксплуатируется или только строится?",
+          "type": "single",
+          "options": [
+            "Действующий (эксплуатируется)",
+            "Строится / реконструкция (ещё не введён)",
+            "Не знаю"
+          ]
+        },
+        {
+          "id": "sites_count",
+          "text": "Сколько площадок (адресов)?",
+          "type": "single",
+          "options": [
+            "1",
+            "2–3",
+            "4 и более",
+            "Не знаю"
+          ]
+        },
+        {
+          "id": "ker_impacts",
+          "text": "Какие виды воздействия?",
+          "type": "multi",
+          "options": [
+            "Выбросы",
+            "Сбросы",
+            "Отходы"
+          ]
+        }
+      ],
+      "ui_note": "КЭР обязателен для объектов I категории НВОС. Для действующих — получение/переоформление; для новых — заявка не позднее чем за 2 месяца до ввода в эксплуатацию.",
+      "registry_instead_of_category": true
+    },
+    {
+      "id": "gee",
+      "direction": "ker_gee",
+      "title": "ГосЭкоЭкспертиза (ГЭЭ)",
+      "site_urls": [
+        "https://ecolusspb.ru/services/gosudarstvennaya-ekologicheskaya-ekspertiza/"
+      ],
+      "kb_slug": "gee",
+      "service_type": "complex",
+      "related_services": [
+        "ker"
+      ],
+      "qualification_questions": [
+        {
+          "id": "gee_doc_type",
+          "text": "Какая документация на экспертизу?",
+          "type": "single",
+          "options": [
+            "Проектная документация объекта",
+            "КЭР",
+            "Документация по ООПТ (особо охраняемая природная территория)",
+            "Другая / не знаю"
+          ]
+        },
+        {
+          "id": "gee_stage",
+          "text": "На какой стадии проект?",
+          "type": "single",
+          "options": [
+            "Готов к подаче",
+            "В разработке",
+            "Только планируем"
+          ]
+        }
+      ],
+      "skip_sites_in_branch": true
+    },
+    {
+      "id": "sanepid-aerodrom",
+      "direction": "ker_gee",
+      "title": "Санэпидзаключение на приаэродромную территорию",
+      "site_urls": [
+        "https://ecolusspb.ru/services/sanitarno-epidemiologicheskoe-zaklyuchenie-na-razmeshchenie-obekta-v-priaerodromnoy-territorii/"
+      ],
+      "kb_slug": "sanepid-aerodrom",
+      "service_type": "complex",
+      "ui_note": "Узкий сегмент — объекты в приаэродромной территории",
+      "related_services": [
+        "szz",
+        "ker"
+      ],
+      "qualification_questions": [
+        {
+          "id": "aero_confirm",
+          "text": "Объект действительно в приаэродромной территории?",
+          "type": "single",
+          "options": [
+            "Да, подтверждено",
+            "Предполагаем / нужна проверка",
+            "Не знаю"
+          ]
+        },
+        {
+          "id": "aero_object",
+          "text": "Тип объекта?",
+          "type": "single",
+          "options": [
+            "Производство",
+            "Склад/логистика",
+            "Торговля",
+            "Другое"
+          ]
+        }
+      ],
+      "skip_sites_in_branch": true
+    }
+  ],
+  "ux_rules": {
+    "document_branch_prefill": [
+      "activity_type",
+      "sites_count"
+    ],
+    "activity_type_note": "В ветке «конкретная услуга» вид деятельности подставляется из основного сценария, если пользователь уже прошёл его. Иначе — тот же список, что на экране «Вид деятельности».",
+    "waste_classes_note": "Отходы 5 класса — паспорта не нужны. Отходы 1–4 класса — паспорта обязательны.",
+    "service_gates_v1": {
+      "description": "Стоп-экраны без заявки в CRM; события GTM disqualified_* — см. app.js evaluateServiceGate",
+      "gates": [
+        {
+          "service_id": "pdv-ndv",
+          "condition": "nvos_category = IV",
+          "gtm_event": "disqualified_pdv_ndv_iv"
+        },
+        {
+          "service_id": "pnool",
+          "condition": "nvos_category in III, IV",
+          "gtm_event": "disqualified_pnool_iii_iv"
+        },
+        {
+          "service_id": "zso",
+          "condition": "zso_water_source = Поверхностный водозабор",
+          "gtm_event": "disqualified_zso_surface"
+        },
+        {
+          "service_id": "deklaraciya-stochnyh-vod",
+          "condition": "dsv_discharge_point = Собственный водный объект",
+          "gtm_event": "disqualified_dsv_not_csv"
+        }
+      ],
+      "exceptions": [
+        "zso: Комбинированный источник — без автостопа"
+      ]
+    },
+    "client_gates_v1": {
+      "description": "Фильтры из скрипта администратора перед контактами; без заявки в CRM",
+      "screen": "client_terms",
+      "gates": [
+        {
+          "condition": "client_contract = электронная закупка",
+          "gtm_event": "disqualified_procurement"
+        },
+        {
+          "condition": "client_prepayment = Нет / только по факту / без аванса",
+          "gtm_event": "disqualified_no_advance"
+        }
+      ],
+      "exceptions": [
+        "Пока не знаю — пропускаем с пометкой «Уточнить при звонке» в комментарии лида"
+      ]
+    }
+  },
+  "question_templates": {
+    "sites_count": {
+      "id": "sites_count",
+      "text": "Сколько площадок (адресов)?",
+      "type": "single",
+      "options": [
+        "1",
+        "2–3",
+        "4 и более",
+        "Не знаю"
+      ]
+    },
+    "nvos_registry_status": {
+      "id": "nvos_registry_status",
+      "text": "Объект поставлен на учёт как объект НВОС?",
+      "type": "single",
+      "options": [
+        "Да",
+        "Нет"
+      ]
+    },
+    "iiv_status": {
+      "id": "iiv_status",
+      "text": "Инвентаризация источников выбросов уже проводилась?",
+      "type": "single",
+      "options": [
+        "Да",
+        "Нет"
+      ]
+    },
+    "wastewater_type": {
+      "id": "wastewater_type",
+      "text": "Какие сточные воды?",
+      "type": "multi",
+      "options": [
+        "Промсток",
+        "Ливневая (талая и ливневая с площадки)",
+        "Хозяйственно-бытовые",
+        "Смешанная",
+        "Не знаю"
+      ]
+    },
+    "discharge_sources_count": {
+      "id": "discharge_sources_count",
+      "text": "Сколько выпусков (точек сброса)?",
+      "type": "single",
+      "options": [
+        "1",
+        "2–3",
+        "4 и более",
+        "Не знаю"
+      ]
+    },
+    "waste_types": {
+      "id": "waste_types",
+      "text": "Какие отходы образуются?",
+      "type": "multi",
+      "options": [
+        "ТКО/упаковка",
+        "Производственные отходы",
+        "Отходы 5 класса (паспорта не нужны)",
+        "Отходы 1–4 класса (нужны паспорта)",
+        "Не знаю"
+      ]
+    }
+  }
+}

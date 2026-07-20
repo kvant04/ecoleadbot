@@ -1,0 +1,1020 @@
+EcoLeadBot
+n8n Workflow Architecture Specification
+DOCUMENT 4 + DOCUMENT 4.1
+Версия: v1.0 FINAL
+Статус: FINAL WORKFLOW ARCHITECTURE SPECIFICATION
+Проект: EcoLeadBot компании «Экологические услуги»
+Дата фиксации: 29.05.2026
+Назначение документа
+Документ фиксирует backend/workflow-архитектуру EcoLeadBot: прием webhook от frontend, rule-based scoring, маршрутизацию, AI Summary, создание лида и задачи в Bitrix24, SLA, nurture-сегменты, обработку ошибок и модель данных Bitrix24.
+Документ собран после контрольной ревизии. Внесено одно финальное изменение: вопрос №6 заменен на более точный вопрос про удобный формат решения, чтобы лучше выявлять готовность клиента передать экологию специалистам.
+0. Контрольная проверка перед фиксацией
+Перед финальной сборкой проведена сверка с Этапами 1, 2 и 3. Ниже зафиксировано, что документ не нарушает Freeze и не расширяет MVP.
+Проверка
+Статус
+Комментарий
+Telegram-бот
+ОК
+Не возвращен в MVP. Telegram остается только каналом связи/прогрева, если пользователь сам выбрал Telegram как способ написать.
+AI-эколог
+ОК
+Не создается. AI только формирует summary для отдела продаж.
+Загрузка файлов
+ОК
+Не добавлена.
+AI-анализ документов
+ОК
+Не добавлен.
+Личный кабинет
+ОК
+Не добавлен.
+Платежи
+ОК
+Не добавлены.
+Календарь записи
+ОК
+Не добавлен.
+Frontend создает лид в Bitrix напрямую
+ОК
+Не делает. Frontend отправляет webhook в n8n.
+AI принимает финальное решение
+ОК
+Не принимает. Rule-based logic главнее AI.
+Email как основной канал
+ОК
+Исключен из MVP. Основные контакты: имя и телефон/WhatsApp.
+JivoSite
+ОК
+На страницах EcoLeadBot не загружается.
+Главный KPI
+ОК
+CR Visitor -> Lead.
+Главная бизнес-цель
+ОК
+Рост клиентов на Экологическом сопровождении.
+1. Назначение документа
+Этап 4 описывает backend/workflow-логику EcoLeadBot в n8n и связанную модель данных Bitrix24.
+структура webhook от frontend;
+валидация и нормализация payload;
+rule-based scoring;
+routing logic;
+AI Summary;
+создание лида в Bitrix24;
+создание задачи админу ОП;
+SLA и контроль просрочек;
+nurture-сегментация;
+обработка ошибок;
+аналитический dataset;
+Bitrix24 Data Model Specification.
+2. Главный принцип Этапа 4
+n8n является оркестратором. Он связывает frontend, scoring, AI summary и Bitrix24, но не заменяет людей в процессе продаж.
+n8n делает
+n8n НЕ делает
+Принимает webhook от frontend
+Не заменяет админа
+Проверяет и нормализует данные
+Не заменяет МЗС
+Считает rule-based scoring
+Не заменяет эколога
+Определяет предварительный route
+Не принимает финальное решение вместо человека
+Формирует AI Summary
+Не делает AI-анализ документов
+Создает лид и задачу в Bitrix24
+Не создает отдельный AI-продукт вне MVP
+3. Что не входит в Этап 4
+Telegram-бот;
+AI-эколог;
+загрузка файлов;
+AI-анализ документов;
+личный кабинет;
+платежи;
+календарь записи;
+сложная персонализация;
+omnichannel orchestration;
+AI-принятие финального решения вместо человека.
+Принцип: сначала рабочий MVP, затем оптимизация по фактическим данным.
+4. Общая архитектура workflow
+SEO статья / страница услуги
+↓
+Floating Widget / Inline CTA / Popup
+↓
+EcoLeadBot frontend
+↓
+Qualification Flow
+↓
+Mini Result
+↓
+Contact Form
+↓
+Webhook n8n
+↓
+Validation
+↓
+Normalize Payload
+↓
+Rule-based Scoring
+↓
+Routing
+↓
+AI Summary
+↓
+Prepare Bitrix Payload
+↓
+Create Bitrix Lead
+↓
+Create Admin Task
+↓
+Admin Qualification
+↓
+МЗС
+↓
+Простая услуга / консультация
+↓
+Nurture
+↓
+Экологическое сопровождение
+5. Главные сущности workflow
+Сущность
+Назначение
+session_id
+Идентификатор прохождения EcoLeadBot.
+source
+Источник входа: CTA, popup, widget, UTM, страница.
+answers
+Ответы пользователя.
+contact
+Контактные данные.
+scores
+Расчетные баллы: complexity, urgency, ES, DIY.
+tags
+Признаки лида.
+complexity
+SIMPLE / MEDIUM / COMPLEX.
+urgency
+LOW / MEDIUM / HIGH.
+lead_priority
+LOW / WARM / HOT.
+es_potential
+LOW / MEDIUM / HIGH.
+route
+SERVICE / CONSULTATION / DIY / ES_SIGNAL.
+ai_summary
+Краткое резюме для админа и МЗС.
+sla
+Срок реакции администратора.
+6. Webhook Contract v1.0
+6.1 Endpoint
+POST https://n8n.ecolussspb.ru/webhook/ecoleadbot-lead
+6.2 Payload structure
+{
+  "session_id": "eco_1730000000_abcd1234",
+  "status": "completed",
+  "source": {
+    "entry_type": "inline_cta",
+    "page_url": "https://ecolusspb.ru/articles/example/",
+    "page_title": "Название страницы",
+    "page_type": "seo_article",
+    "utm_source": "",
+    "utm_medium": "",
+    "utm_campaign": "",
+    "utm_content": "",
+    "utm_term": "",
+    "first_touch_utm": {},
+    "current_utm": {},
+    "ab_variant": "inline_cta_a",
+    "popup_trigger": "scroll_depth",
+    "headline_variant": "headline_b"
+  },
+  "answers": {
+    "object_type": "Производство",
+    "object_features": ["Мусор и упаковка", "Выбросы в воздух"],
+    "sites_count": "1",
+    "ecology_responsible": "Бухгалтер",
+    "main_situation": "Не знаем что нужно сдавать",
+    "urgency": "В течение месяца",
+    "help_format": "Чтобы кто-то полностью занимался экологией"
+  },
+  "contact": {
+    "name": "Иван",
+    "phone_or_whatsapp": "+79990000000",
+    "telegram": "@username",
+    "preferred_contact_method": "whatsapp",
+    "do_not_call": true,
+    "comment": ""
+  },
+  "meta": {
+    "started_at": "2026-05-28T12:00:00+03:00",
+    "completed_at": "2026-05-28T12:03:00+03:00",
+    "last_screen": "contact",
+    "device": "desktop",
+    "browser": "Chrome"
+  }
+}
+6.3 Required fields
+Блок
+Поле
+Обязательность
+root
+session_id
+да
+root
+status
+да
+source
+entry_type
+да
+source
+page_url
+да
+source
+page_type
+да
+answers
+object_type
+да
+answers
+object_features
+да
+answers
+ecology_responsible
+да
+answers
+main_situation
+да
+answers
+urgency
+да
+answers
+help_format
+да
+contact
+name
+да
+contact
+phone_or_whatsapp
+да
+contact
+preferred_contact_method
+да
+meta
+started_at
+да
+meta
+completed_at
+да
+meta
+device
+да
+6.4 Allowed values
+Поле
+Значения
+status
+started / partial / completed / abandoned
+page_type
+seo_article / service_page / landing / homepage / other
+entry_type
+floating_widget / inline_cta / auto_popup / exit_popup / scroll_popup / direct
+preferred_contact_method
+phone / whatsapp / telegram
+device
+desktop / mobile / tablet
+6.5 Validation logic в n8n
+Проверить наличие session_id.
+Проверить status = completed для создания лида.
+Проверить name.
+Проверить phone_or_whatsapp.
+Проверить минимум 10 цифр в телефоне.
+Проверить answers.
+Проверить согласие на обработку ПДн, если frontend передает отдельный флаг consent.
+Если preferred_contact_method = telegram, поле telegram обязательно.
+6.6 Error responses
+{
+  "success": false,
+  "error_code": "MISSING_CONTACT",
+  "message": "Не хватает контактных данных"
+}
+{
+  "success": false,
+  "error_code": "INVALID_PHONE",
+  "message": "Телефон указан некорректно"
+}
+{
+  "success": false,
+  "error_code": "MISSING_ANSWERS",
+  "message": "Не хватает ответов для обработки"
+}
+{
+  "success": false,
+  "error_code": "INTERNAL_ERROR",
+  "message": "Не удалось обработать заявку"
+}
+6.7 Success response
+{
+  "success": true,
+  "lead_created": true,
+  "session_id": "eco_1730000000_abcd1234",
+  "lead_id": "12345",
+  "route": "CONSULTATION",
+  "lead_priority": "HOT",
+  "es_potential": "HIGH",
+  "message": "Заявка успешно отправлена"
+}
+7. n8n Workflow Nodes v1.0
+№
+Node
+Тип
+Задача
+1
+Webhook Trigger
+Webhook
+Принять payload от frontend.
+2
+Validate Payload
+Code / Function
+Проверить обязательные поля и consent.
+3
+Normalize Payload
+Code / Function
+Телефон, Telegram, пустые поля, допустимые значения.
+4
+Rule-based Scoring
+Code / Function
+Посчитать score, tags, complexity, ES, DIY, priority.
+5
+Route Engine
+Code / Function
+Определить route: SERVICE / CONSULTATION / DIY / ES_SIGNAL.
+6
+AI Summary
+OpenAI / HTTP Request
+Сформировать summary и подсказки.
+7
+Prepare Bitrix Payload
+Code / Function
+Собрать поля для лида Bitrix24.
+8
+Create Bitrix Lead
+HTTP Request / Bitrix node
+Создать лид.
+9
+Create Admin Task
+HTTP Request / Bitrix node
+Создать задачу админу.
+10
+Respond to Webhook
+Respond node
+Вернуть frontend success/error.
+8. Scoring Model v1.0
+Scoring оценивает не только вероятность сделки. Главная задача scoring - определить сложность, срочность, ES-потенциал, DIY-вероятность, приоритет обработки и правильный маршрут.
+8.1 Основные счетчики
+complexity_score
+urgency_score
+es_score
+diy_score
+8.2 Complexity Score
+Фактор
+Ответ
+Баллы
+Тип объекта
+Производство
++30
+Тип объекта
+Стройка
++20
+Тип объекта
+Автосервис / СТО
++15
+Тип объекта
+Автомойка
++15
+Тип объекта
+Склад
++10
+Тип объекта
+Торговля
++5
+Тип объекта
+Офис
+0
+Факторы
+Мусор и упаковка
++10
+Факторы
+Масла / ветошь
++15
+Факторы
+Выбросы в воздух
++25
+Факторы
+Сброс воды
++35
+Площадки
+1
+0
+Площадки
+2-3
++25
+Площадки
+4+
++40
+Complexity
+Диапазон
+SIMPLE
+0-29
+MEDIUM
+30-69
+COMPLEX
+70+
+8.3 Combination rules для качества scoring
+Один и тот же ответ имеет разную значимость в разных сегментах. Поэтому в n8n добавляются скрытые комбинационные правила. Это не увеличивает число экранов и не нарушает UX.
+Комбинация
+Дополнительный эффект
+СТО + масла/ветошь
+complexity +15, tag: auto_waste
+Производство + масла/ветошь
+complexity +35, tag: production_waste
+Производство + выбросы
+complexity +25, tag: emission_risk
+Производство + сброс воды
+complexity +35, tag: discharge_risk
+Выбросы + сбросы
+route = CONSULTATION
+Производство + выбросы + сбросы
+complexity = COMPLEX, route = CONSULTATION
+2+ площадок + нет эколога
+ES +30, priority минимум WARM
+8.4 Urgency Score
+Фактор
+Ответ
+Баллы
+Срок
+Пока изучаем
+0
+Срок
+В этом году
++10
+Срок
+В течение квартала
++25
+Срок
+В течение месяца
++40
+Срок
+Срочно
++60
+Ситуация
+Проверка или предписание
++70
+Urgency
+Диапазон
+LOW
+0-19
+MEDIUM
+20-59
+HIGH
+60+
+8.5 ES Score
+Фактор
+Ответ
+Баллы
+Кто занимается экологией
+Штатный эколог
+0
+Кто занимается экологией
+Подрядчик
++10
+Кто занимается экологией
+Охрана труда
++20
+Кто занимается экологией
+Бухгалтер
++35
+Кто занимается экологией
+Директор
++40
+Кто занимается экологией
+Никто
++45
+Формат помощи
+Чтобы кто-то полностью занимался экологией
++60
+Формат помощи
+Чтобы специалист сделал конкретный документ
++25
+Формат помощи
+Чтобы специалист подсказал, что нужно
++20
+Формат помощи
+Пока не решили
++10
+Формат помощи
+Разобраться самому
+0
+Ситуация
+Проверка или предписание
++30
+ES Potential
+Диапазон
+LOW
+0-29
+MEDIUM
+30-69
+HIGH
+70+
+8.6 DIY Score
+Фактор
+Ответ
+Баллы
+Формат помощи
+Разобраться самому
++60
+Ситуация
+Пока изучаем
++20
+Формат помощи
+Пока не решили
++10
+DIY Level
+Диапазон
+LOW
+0-29
+MEDIUM
+30-59
+HIGH
+60+
+9. Tags Engine
+Тег
+Когда ставится
+production
+object_type = Производство
+warehouse
+object_type = Склад
+construction
+object_type = Стройка
+car_service
+object_type = Автосервис / СТО
+car_wash
+object_type = Автомойка
+no_ecologist
+ecology_responsible = Никто
+accountant_responsible
+ecology_responsible = Бухгалтер
+director_responsible
+ecology_responsible = Директор
+urgent
+urgency_score >= 60
+inspection_risk
+main_situation = Проверка или предписание
+high_es
+es_score >= 70
+diy
+diy_score >= 60
+multi_site
+sites_count = 2-3 или 4+
+10. Route Engine
+Правило
+Условие
+Маршрут
+1
+complexity = COMPLEX
+CONSULTATION
+2
+производство + выбросы + сбросы
+CONSULTATION
+3
+2+ площадок + нет эколога / высокая неопределенность
+CONSULTATION
+4
+es_potential = HIGH
+ES_SIGNAL + рекомендовать мягкий мост к ЭС
+5
+diy_score = HIGH и urgency != HIGH
+DIY
+6
+simple case, low complexity, нет тревожных сигналов
+SERVICE
+Если срабатывает несколько правил, приоритет маршрута следующий: CONSULTATION > ES_SIGNAL > SERVICE > DIY. Если HIGH urgency или проверка/предписание, DIY не должен блокировать обработку лидом.
+11. Lead Priority Model
+Priority
+Условия
+HOT
+Предписание / проверка / штраф / HIGH urgency / COMPLEX / HIGH ES.
+WARM
+Есть потребность, нет высокой срочности, простая или средняя сложность.
+LOW
+DIY, просто изучает, нет срочности, низкая готовность к покупке.
+12. SLA Engine
+Priority
+SLA
+Due date
+HOT
+15 минут
+created_at + 15 минут
+WARM
+1 рабочий день
+следующий рабочий день
+LOW
+3 рабочих дня
++3 рабочих дня или nurture без звонка
+Контроль просрочки: HOT проверяется через 20 минут и 60 минут; WARM - через 24 часа; LOW - через 72 часа.
+13. AI Summary Specification v1.0
+13.1 Цель
+AI Summary создается не для клиента, а для администратора, МЗС и будущей аналитики. Его задача - за 30 секунд объяснить, кто клиент, что у него происходит, насколько кейс сложный, есть ли потенциал ЭС и что делать дальше.
+13.2 Что AI не делает
+не принимает решение;
+не меняет route;
+не меняет priority;
+не назначает SLA;
+не заменяет администратора;
+не заменяет МЗС.
+13.3 JSON structure
+{
+  "segment": "production",
+  "complexity": "COMPLEX",
+  "urgency": "HIGH",
+  "es_potential": "HIGH",
+  "lead_priority": "HOT",
+  "recommended_route": "CONSULTATION",
+  "likely_services": ["Консультация эколога", "ПЭК", "НВОС"],
+  "route_reason": "Маршрут в консультацию выбран из-за производства, выбросов, отсутствия эколога и высокого ES-потенциала.",
+  "admin_hint": "Уточнить количество объектов, наличие проверок и кто принимает решение.",
+  "sales_hint": "Высокий потенциал ЭС. Не продавать простую услугу напрямую. Сначала консультация.",
+  "summary": "Производственный объект. Экологией занимается бухгалтер. Есть выбросы и отходы. Вопрос планируют решить в течение месяца. Клиент хочет, чтобы экологией занимались специалисты."
+}
+13.4 OpenAI prompt
+Ты помощник отдела продаж экологической компании.
+Тебе запрещено менять route, priority, complexity и score.
+Они уже рассчитаны rule-based системой.
+Твоя задача:
+1. Сделать краткое понятное summary.
+2. Объяснить причину маршрута.
+3. Подсказать админу следующие вопросы.
+4. Подсказать МЗС направление разговора.
+Пиши кратко.
+Не используй сложный экологический язык.
+Верни строго JSON без Markdown.
+14. Question Architecture v1.0
+Для MVP используется 6 основных экранов и один дополнительный вопрос только для сложных кейсов. Цель - сохранить низкое трение и при этом собрать сигналы сложности, срочности, DIY и ES-потенциала.
+№
+Вопрос
+Тип
+Варианты
+Что определяем
+1
+Что ближе всего к вашей компании?
+single
+Производство; Склад; Стройка; Автосервис / СТО; Автомойка; Магазин / торговля; Офис; ЖКХ; Сельхоз; Другое
+Сегмент, первичная сложность.
+2
+Что у вас остается после работы?
+multiple
+Мусор и упаковка; Масла / ветошь; Выбросы в воздух; Сброс воды; Не знаю; Ничего из этого
+Отходы, выбросы, сбросы, complexity.
+3
+Кто сейчас занимается экологией?
+single
+Штатный эколог; Бухгалтер; Директор; Охрана труда; Подрядчик; Никто
+ES-потенциал, хаос, ответственный.
+4
+Что сейчас происходит?
+single
+Не знаем что нужно сдавать; Нужно сделать документ; Проверка или предписание; Хотим навести порядок; Пока изучаем
+Pain, urgency, HOT-сигналы, DIY.
+5
+Когда хотите решить вопрос?
+single
+Срочно; В течение месяца; В течение квартала; В этом году; Пока изучаем
+Urgency, lead priority.
+6
+Что было бы для вас удобнее?
+single
+Разобраться самому; Чтобы специалист подсказал, что нужно; Чтобы специалист сделал конкретный документ; Чтобы кто-то полностью занимался экологией; Пока не решили
+Главный вопрос на ES-potential, delegation intent и DIY.
+7
+Сколько у вас площадок?
+single conditional
+1; 2-3; 4+
+Показывается только если есть признаки сложности: производство, выбросы/сбросы, высокая неопределенность.
+Финальное изменение ревизии: вопрос №6 заменен на более точный. Он напрямую измеряет готовность клиента к делегированию экологии, а значит лучше работает на главную бизнес-цель - рост ЭС.
+15. Mini Result Logic
+Тип результата
+Текстовая логика
+Simple
+Обычно таким компаниям требуется: учет отходов, экологическая отчетность, контроль обязательных документов.
+Complex
+Похоже, потребуется более детальная проверка ситуации. Для таких объектов часто требуется консультация эколога.
+High ES
+Во многих компаниях подобные задачи удобнее передать специалистам, чтобы не держать все в голове самим.
+Mini Result показывается до контактной формы. Это сохраняет принцип value before contacts.
+16. Bitrix24 Lead Architecture
+После обработки n8n создается лид в Bitrix24. Сделка, контакт и компания создаются после квалификации, по текущей логике отдела продаж.
+EcoLeadBot
+↓
+Lead
+↓
+Квалификация админом
+↓
+Конвертация
+↓
+Контакт + Компания + Сделка
+16.1 Название лида
+[Сегмент] / [Площадки] / [Priority]
+Примеры: Производство / 1 площадка / HOT; Склад / WARM; Стройка / HIGH ES.
+16.2 Стандартные поля
+Поле Bitrix
+Источник
+NAME
+contact.name
+PHONE
+contact.phone_or_whatsapp
+COMMENTS
+AI Summary + scores + route
+SOURCE
+EcoLeadBot
+UTM_SOURCE
+source.utm_source
+UTM_MEDIUM
+source.utm_medium
+UTM_CAMPAIGN
+source.utm_campaign
+UTM_CONTENT
+source.utm_content
+UTM_TERM
+source.utm_term
+17. Bitrix24 Data Model Specification v1.0
+Пользовательские поля создаются с префиксом UF_ECO_.
+Поле
+Тип
+Значения / назначение
+UF_ECO_SESSION_ID
+Строка
+session_id EcoLeadBot.
+UF_ECO_ENTRY_TYPE
+Список
+floating_widget / inline_cta / auto_popup / scroll_popup / exit_popup
+UF_ECO_PAGE_TYPE
+Список
+seo_article / service_page / landing / homepage / other
+UF_ECO_SEGMENT
+Список
+production / warehouse / construction / car_service / car_wash / trade / office / housing / agriculture / other
+UF_ECO_COMPLEXITY
+Список
+SIMPLE / MEDIUM / COMPLEX
+UF_ECO_PRIORITY
+Список
+LOW / WARM / HOT
+UF_ECO_ES_POTENTIAL
+Список
+LOW / MEDIUM / HIGH
+UF_ECO_ROUTE
+Список
+SERVICE / CONSULTATION / DIY / ES_SIGNAL
+UF_ECO_DIY_LEVEL
+Список
+LOW / MEDIUM / HIGH
+UF_ECO_RESPONSIBLE
+Список
+ecologist / accountant / director / labor_safety / contractor / nobody
+UF_ECO_URGENCY
+Список
+LOW / MEDIUM / HIGH
+UF_ECO_OBJECT_COUNT
+Список
+1 / 2_3 / 4_plus
+UF_ECO_TAGS
+Множественная строка
+production, high_es, urgent, inspection, prescription, no_ecologist и др.
+UF_ECO_AI_SUMMARY
+Текст
+Полное AI Summary.
+UF_ECO_ADMIN_HINT
+Текст
+Подсказка администратору.
+UF_ECO_SALES_HINT
+Текст
+Подсказка МЗС.
+UF_ECO_QUALIFIED
+Да / Нет
+Заполняет админ.
+UF_ECO_ES_CONFIRMED
+Да / Нет
+Заполняет админ.
+UF_ECO_ROUTE_CONFIRMED
+Да / Нет
+Заполняет админ.
+UF_ECO_REJECT_REASON
+Список
+spam / duplicate / physical_person / wrong_contact / not_our_profile / cannot_reach / other
+UF_ECO_ES_SOLD
+Да / Нет
+Флаг факта продажи Экологического сопровождения.
+17.1 Lead stages
+Стадия
+Значение
+NEW
+Новый лид. Создан EcoLeadBot.
+IN_PROGRESS
+В работе администратора.
+QUALIFIED
+Квалифицирован. Передается МЗС.
+NOT_QUALIFIED
+Не квалифицирован.
+CONVERTED
+Конвертирован в контакт/компанию/сделку.
+17.2 Deal stages
+Стадия
+Значение
+NEW_DEAL
+Новая сделка.
+CONSULTATION
+Назначена консультация.
+SERVICE_SALE
+Продажа услуги.
+ES_NEGOTIATION
+Переговоры по ЭС.
+WON
+Успешно.
+LOST
+Проиграно.
+18. Bitrix Task Creation Logic
+После создания лида n8n создает задачу админу ОП. Не МЗС, не РОП, не экологу. Это соответствует текущей операционной логике: EcoLeadBot -> админ -> квалификация -> МЗС.
+18.1 Название задачи
+[HOT] EcoLeadBot - связаться с клиентом
+18.2 Описание задачи
+Источник: EcoLeadBot
+Имя: {{name}}
+Телефон: {{phone}}
+Telegram: {{telegram}}
+Приоритет: {{priority}}
+Маршрут: {{route}}
+ES: {{es_potential}}
+Complexity: {{complexity}}
+Краткое summary:
+{{summary}}
+Что уточнить:
+{{admin_hint}}
+Ссылка на лид:
+{{lead_link}}
+19. Qualification Feedback Loop
+Для улучшения scoring и routing админ после обработки лида должен зафиксировать обратную связь.
+Поле
+Значения
+Зачем нужно
+UF_ECO_QUALIFIED
+Да / Нет
+Понять качество лидов.
+UF_ECO_ES_CONFIRMED
+Да / Нет
+Проверить точность ES-потенциала.
+UF_ECO_ROUTE_CONFIRMED
+Да / Нет
+Проверить точность маршрутизации.
+UF_ECO_REJECT_REASON
+Список причин
+Снизить мусорные лиды.
+UF_ECO_ES_SOLD
+Да / Нет
+Измерить, какие сценарии реально приводят к ЭС.
+20. Lead Distribution Logic
+В MVP не делаем автоматическое распределение, балансировку очередей и сложную маршрутизацию по менеджерам. При текущем объеме это преждевременное усложнение.
+EcoLeadBot
+↓
+Администратор ОП
+↓
+Квалификация
+↓
+Передача МЗС вручную
+21. Nurture Segmentation
+Сегмент
+Признаки
+Контент
+DIY
+Высокий DIY, низкая срочность
+Базовая экология, чек-листы, что нужно сдавать, типовые ошибки.
+Assigned Responsible
+Бухгалтер, директор, ОТ специалист
+Что проверяют, что чаще забывают, как не получить штраф.
+Inspection Risk
+Проверка, предписание, штраф
+Проверки, изменения законодательства, кейсы штрафов, кейсы клиентов.
+Future ES
+Высокий ES, нет эколога, готовность делегировать
+Кейсы ЭС, экономия на штатном экологе, спокойствие собственника, аутсорс экологии.
+22. Error Handling Workflow
+Ошибка
+Действие
+OpenAI недоступен
+Лид создается без AI Summary. Rule-based scoring и route сохраняются.
+Bitrix недоступен
+Повторить через 1 минуту, 5 минут, 15 минут. После третьей ошибки - уведомить ответственного.
+Задача не создана
+Повторить создание задачи. Лид не удалять.
+Ошибка валидации
+Вернуть frontend структурированный error response.
+Неполные данные
+Не создавать лид, вернуть ошибку или сохранить технический лог.
+23. Analytics Dataset
+Каждый лид должен сохранять данные, нужные для ответа на главный вопрос: какие страницы, сегменты и сценарии EcoLeadBot реально приводят к продаже Экологического сопровождения.
+Поле
+Назначение
+session_id
+Связь с прохождением.
+created_at
+Дата создания.
+entry_type
+Источник входа в EcoLeadBot.
+page_type
+Тип страницы.
+page_url
+Конкретная страница входа.
+segment
+Сегмент клиента.
+complexity
+Сложность кейса.
+urgency
+Срочность.
+es_potential
+Потенциал ЭС.
+priority
+Приоритет обработки.
+route
+Маршрут.
+qualified
+Подтвержден ли лид.
+deal_created
+Создана ли сделка.
+es_sold
+Продано ли Экологическое сопровождение.
+24. Full End-to-End Workflow
+SEO-трафик
+↓
+Статья / услуга
+↓
+CTA / Widget / Popup
+↓
+EcoLeadBot
+↓
+6 вопросов + условный вопрос о площадках
+↓
+Mini Result
+↓
+Контакты
+↓
+Webhook n8n
+↓
+Validation + Normalize
+↓
+Scoring
+↓
+Routing
+↓
+AI Summary
+↓
+Bitrix Lead
+↓
+Admin Task + SLA
+↓
+Квалификация админом
+↓
+Передача МЗС
+↓
+Продажа простой услуги / консультации
+↓
+Nurture
+↓
+Экологическое сопровождение
+25. Acceptance Criteria
+Критерий
+Статус готовности
+Webhook принимает completed-заявки
+обязательно
+Payload валидируется
+обязательно
+Данные нормализуются
+обязательно
+Scoring работает
+обязательно
+Routing работает
+обязательно
+AI Summary создается
+обязательно, но сбой AI не должен ломать создание лида
+Лид создается в Bitrix24
+обязательно
+Задача админу создается
+обязательно
+SLA назначается
+обязательно
+Ошибки обрабатываются
+обязательно
+Nurture-сегмент определяется
+обязательно
+Аналитические поля сохраняются
+обязательно
+Фидбек админа фиксируется
+обязательно для оптимизации после запуска
+26. Финальная фиксация
+Этап 4 фиксирует рабочую архитектуру n8n и Bitrix24 для MVP EcoLeadBot. Документ не добавляет запрещенных функций и не расширяет MVP сверх утвержденного Freeze.
+Ключевое решение после ревизии: вопрос №6 заменен на «Что было бы для вас удобнее?». Это усиливает определение готовности клиента делегировать экологию специалистам и повышает качество ES Potential Score.
+Следующий шаг после утверждения документа: собрать тестовый workflow в n8n, создать поля Bitrix24, подключить тестовый webhook и провести end-to-end тест от frontend payload до созданного лида и задачи администратора.

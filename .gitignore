@@ -22,5 +22,25 @@ desktop.ini
 # Секреты
 .env
 
+# Локальный конфиг деплоя (SSH-хост, не пароли)
+deploy/deploy.config.env
+
+# Архивы деплоя (собираются скриптами, не source of truth)
+deploy/**/*.tar.gz
+deploy/**/*.zip
+deploy/sweb/ecoleadbot-sweb.zip
+deploy/sweb/dist/
+
+# Серверный elb-config с секретом (если лежит в корне VPS-копии)
+/elb-config.local.js
+/elb-config.secret.js
+
 # Промежуточные данные парсинга (итог — kb/services.md)
 reports/services_raw.json
+
+# Локальные CRM/аналитика — не коммитить
+*.xls
+*.xlsx
+bitrix_deals.*
+friend_companies.*
+intersections_*
