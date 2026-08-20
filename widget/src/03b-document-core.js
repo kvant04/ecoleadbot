@@ -85,10 +85,6 @@
     advanceDocumentBranch(null);
   }
 
-  function getDocumentContactPreviousScreen() {
-    return "client_terms";
-  }
-
   function getNvosListGroup(svc) {
     if (!svc) return "standalone";
     if (svc.id === "postanovka-nvos") return "first";
@@ -143,15 +139,16 @@
   }
 
   function syncObjectFieldsFromQual() {
+    var answers = ensureAnswers();
     var nvos = resolveNvosCategory();
     var sites = resolveSitesCount();
     if (nvos) {
       state.nvos_category = nvos;
-      state.answers.nvos_category = nvos;
+      answers.nvos_category = nvos;
     }
     if (sites) {
       state.sites_count = sites;
-      state.answers.sites_count = sites;
+      answers.sites_count = sites;
     }
   }
 
@@ -330,8 +327,19 @@
   }
 
   function ensureQualificationAnswers() {
-    if (!state.qualification_answers) state.qualification_answers = {};
+    if (!state.qualification_answers || typeof state.qualification_answers !== "object" ||
+        Array.isArray(state.qualification_answers)) {
+      state.qualification_answers = {};
+    }
     return state.qualification_answers;
+  }
+
+  /** Guarantees state.answers is a plain object (restored/partial sessions may omit it). */
+  function ensureAnswers() {
+    if (!state.answers || typeof state.answers !== "object" || Array.isArray(state.answers)) {
+      state.answers = {};
+    }
+    return state.answers;
   }
 
   function saveDocumentQualAnswer(questionId, value) {
@@ -344,7 +352,7 @@
     state.qualification_answers = qa;
     if (questionId === "sites_count" || questionId === "eco_sites") {
       state.sites_count = value || "";
-      state.answers.sites_count = value || "";
+      ensureAnswers().sites_count = value || "";
     }
     persist();
   }
@@ -457,13 +465,13 @@
   }
 
   function setClarifyAnswer(questionId, value) {
+    var answers = ensureAnswers();
     if (value === "" || value == null || (Array.isArray(value) && value.length === 0)) {
-      delete state.answers[questionId];
+      delete answers[questionId];
       if (state.qualification_answers) delete state.qualification_answers[questionId];
     } else {
-      state.answers[questionId] = value;
-      if (!state.qualification_answers) state.qualification_answers = {};
-      state.qualification_answers[questionId] = value;
+      answers[questionId] = value;
+      ensureQualificationAnswers()[questionId] = value;
     }
     persist();
   }

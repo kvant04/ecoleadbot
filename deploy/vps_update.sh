@@ -6,6 +6,11 @@ cd "$(dirname "$0")/.."
 
 echo "=== EcoLeadBot update ==="
 
+mkdir -p data/metrika_state
+if [ ! -f data/metrika_state/state.json ]; then
+  echo '{"sent_cycle_ids": []}' > data/metrika_state/state.json
+fi
+
 if [ ! -f .env ]; then
   echo "ERROR: .env not found"
   exit 1
@@ -17,7 +22,7 @@ docker rm -f ecoleadbot 2>/dev/null || true
 docker compose build
 docker compose up -d --force-recreate
 
-# Caddy (n8n stack) проксирует elb.ecolusspb.ru -> ecoleadbot:8000 в сети n8n_default
+# Caddy (n8n stack) РїСЂРѕРєСЃРёСЂСѓРµС‚ elb.ecolusspb.ru -> ecoleadbot:8000 РІ СЃРµС‚Рё n8n_default
 if docker network inspect n8n_default >/dev/null 2>&1; then
   if ! docker inspect ecoleadbot --format '{{range $k,$v := .NetworkSettings.Networks}}{{$k}} {{end}}' | grep -q 'n8n_default'; then
     docker network connect n8n_default ecoleadbot 2>/dev/null || true

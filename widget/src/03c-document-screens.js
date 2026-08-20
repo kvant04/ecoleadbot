@@ -14,21 +14,20 @@
 
     screen.appendChild(el("h2", "ecoleadbot-title", "Объект на учёте в реестре НВОС?"));
     screen.appendChild(el("p", "ecoleadbot-subtitle",
-      (svc ? "Услуга: " + svc.title + ". " : "") +
+      (svc ? "Услуга: " + escapeHtml(svc.title) + ". " : "") +
       "КЭР требуется для объектов I категории — уточним, есть ли уже постановка на учёт."));
 
     var optionsWrap = el("div", "ecoleadbot-options");
+    var cur = state.document_nvos_registry || ensureQualificationAnswers().nvos_registry_status || "";
     REGISTRY_ON_ACCOUNT_OPTIONS.forEach(function (opt) {
       var card = el("button", "ecoleadbot-card");
       card.type = "button";
-      var cur = state.qualification_answers.ker_on_registry || state.document_nvos_registry || "";
       var isSel = cur === opt;
       if (isSel) card.classList.add("is-selected");
       card.innerHTML =
         '<span class="ecoleadbot-card__check" aria-hidden="true">' + (isSel ? "●" : "") + "</span>" +
         "<span>" + escapeHtml(opt) + "</span>";
       card.addEventListener("click", function () {
-        saveDocumentQualAnswer("ker_on_registry", opt);
         state.document_nvos_registry = opt;
         saveDocumentQualAnswer("nvos_registry_status", opt);
         advanceDocumentBranch("registry");
@@ -107,11 +106,12 @@
     screen.appendChild(el("h2", "ecoleadbot-title", "Категория объекта НВОС"));
     if (svc) {
       screen.appendChild(el("p", "ecoleadbot-subtitle",
-        "Услуга: " + svc.title + ". Если не знаете — выберите «Не знаю», уточним при звонке."));
+        "Услуга: " + escapeHtml(svc.title) +
+        ". Если не знаете — выберите «Не знаю», уточним при звонке."));
     }
 
     var optionsWrap = el("div", "ecoleadbot-options");
-    var selected = state.nvos_category || state.answers.nvos_category || "";
+    var selected = state.nvos_category || (state.answers && state.answers.nvos_category) || "";
     NVOS_CATEGORY_OPTIONS.forEach(function (opt) {
       var card = el("button", "ecoleadbot-card");
       card.type = "button";
@@ -122,7 +122,7 @@
         "<span>" + escapeHtml(opt) + "</span>";
       card.addEventListener("click", function () {
         state.nvos_category = opt;
-        state.answers.nvos_category = opt;
+        ensureAnswers().nvos_category = opt;
         saveDocumentQualAnswer("nvos_category", opt);
         persist();
         proceedDocumentBranchOrGate("nvos_category");
@@ -150,7 +150,7 @@
       "Нужно для оценки объёма работ и подготовки разговора со специалистом."));
 
     var optionsWrap = el("div", "ecoleadbot-options");
-    var selected = state.sites_count || state.answers.sites_count || "";
+    var selected = state.sites_count || (state.answers && state.answers.sites_count) || "";
     SITES_COUNT_OPTIONS.forEach(function (opt) {
       var card = el("button", "ecoleadbot-card");
       card.type = "button";
@@ -161,7 +161,7 @@
         "<span>" + escapeHtml(opt) + "</span>";
       card.addEventListener("click", function () {
         state.sites_count = opt;
-        state.answers.sites_count = opt;
+        ensureAnswers().sites_count = opt;
         saveDocumentQualAnswer("sites_count", opt);
         advanceDocumentBranch("sites");
       });
@@ -339,11 +339,28 @@
       before_client_terms_screen: "",
       client_terms_answers: {},
       client_terms_ok: false,
-      last_client_gate_id: ""
+      last_client_gate_id: "",
+      /* RAG display flags — backfill for older persisted sessions */
+      rag_answer_html: "",
+      rag_from_template: false,
+      rag_podrobnee_template_key: ""
     };
   }
 
   function ensureV14State(s) {
+    // Core session fields (not only v1.4) — old/partial saves may omit them.
+    if (!s.answers || typeof s.answers !== "object" || Array.isArray(s.answers)) {
+      s.answers = {};
+    }
+    if (!s.contact || typeof s.contact !== "object" || Array.isArray(s.contact)) {
+      s.contact = {};
+    }
+    if (!s.timestamps || typeof s.timestamps !== "object") {
+      s.timestamps = { started_at: isoNow() };
+    } else if (!s.timestamps.started_at) {
+      s.timestamps.started_at = isoNow();
+    }
+
     var defaults = createDefaultV14Fields();
     Object.keys(defaults).forEach(function (k) {
       if (s[k] === undefined) s[k] = defaults[k];
@@ -379,10 +396,11 @@
     return out;
   }
 
-  function resetSessionForRetest() {
+  function resetSessionToIntro() {
     var utm = parseUtm();
     var headline = state.headline_variant;
     var ab = state.ab_variant_token;
+    var alreadySubmittedAt = state.already_submitted_at;
     var v14 = createDefaultV14Fields();
     Object.keys(v14).forEach(function (k) { state[k] = v14[k]; });
     state.session_id = makeSessionId();
@@ -394,9 +412,13 @@
     state.do_not_call = false;
     state.consent = false;
     state.preferred_contact_method = "phone";
-    state.already_submitted_at = 0;
+    state.timestamps = { started_at: isoNow() };
+    state.popup_closed_at = 0;
+    // UI/quiz state starts fresh, while the production anti-duplicate window remains intact.
+    state.already_submitted_at = alreadySubmittedAt;
     state.rag_question = "";
     state.rag_answer = "";
+    state.rag_answer_html = "";
     state.rag_answer_summary = "";
     state.rag_assistant_recommendation = "";
     state.rag_confidence = "";
@@ -404,6 +426,9 @@
     state.rag_sources_titles = [];
     state.rag_es_signal = "";
     state.rag_entry_type = "";
+    state.rag_error_kind = "";
+    state.rag_from_template = false;
+    state.rag_podrobnee_template_key = "";
     state.previous_screen = "";
     state.previous_question_index = null;
     state.current_utm = utm;

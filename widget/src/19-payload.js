@@ -4,7 +4,9 @@
   function buildPayload() {
     syncMainFlowStateFromAnswers();
     syncObjectFieldsFromQual();
-    var a = state.answers;
+    /* Sync may promote/normalize fields on state/answers — persist before webhook. */
+    persist();
+    var a = ensureAnswers();
     var activityType = state.activity_type || a.activity_type || a.object_type || "";
     var signalIds = normalizeObjectSignals(state.object_signals || a.object_signals || []);
     var nvosCategory = resolveNvosCategory();
@@ -30,19 +32,22 @@
     if (a.document_interest) answers.document_interest = a.document_interest;
 
     var selectedSvc = state.selected_service_id ? getServiceById(state.selected_service_id) : null;
-    if (state.rag_question) {
-      answers.rag_question = state.rag_question;
+    if (state.rag_question || state.rag_answer) {
+      answers.rag_question = getRagQuestionForCrm() || state.rag_question || "";
       answers.rag_es_signal = state.rag_es_signal || "";
       answers.rag_answer_summary = state.rag_answer_summary || summarizeRagAnswer(state.rag_answer);
       answers.rag_assistant_recommendation = state.rag_assistant_recommendation || "";
       answers.rag_confidence = state.rag_confidence || "";
-      answers.rag_sources_titles = state.rag_sources_titles || [];
+      /* rag_sources_titles — только для test UI; в n8n/Bitrix не отправляем */
       answers.rag_entry_type = state.rag_entry_type || "question_link";
       if (state.rag_entry_type === "podrobnee") {
         answers.rag_podrobnee_zone_id = state.mini_zone_rag_id || "";
         answers.rag_podrobnee_zone_title = state.mini_zone_rag_title || "";
       }
-      answers.help_format = a.help_format || "консультация специалиста";
+      /* Default only when quiz never set help_format (RAG-only entry). */
+      if (!(answers.help_format || "").trim()) {
+        answers.help_format = "консультация специалиста";
+      }
     }
 
     var utm = state.current_utm || {};
@@ -97,8 +102,9 @@
       },
       v14: {
         flow: state.flow || "",
-        activity_type: state.activity_type || a.object_type || "",
-        object_signals: state.object_signals || [],
+        activity_type: activityType,
+        /* IDs by contract (scoring-spec): labels live in answers.object_signals */
+        object_signals: signalIds.slice(),
         nvos_category: nvosCategory,
         sites_count: sitesCount,
         main_situation: a.main_situation || "",

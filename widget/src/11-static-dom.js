@@ -28,14 +28,13 @@
 
     popup = el("div", "ecoleadbot-popup");
 
+    var header = el("div", "ecoleadbot-header");
+    header.appendChild(createWidgetLogoImg("ecoleadbot-header__logo", 36));
     var closeBtn = el("button", "ecoleadbot-close", "×");
     closeBtn.type = "button";
     closeBtn.setAttribute("aria-label", "Закрыть");
     closeBtn.addEventListener("click", closePopup);
-    popup.appendChild(closeBtn);
-
-    var header = el("div", "ecoleadbot-header");
-    header.appendChild(createWidgetLogoImg("ecoleadbot-header__logo", 36));
+    header.appendChild(closeBtn);
     popup.appendChild(header);
 
     progressEl = el("div", "ecoleadbot-progress ecoleadbot-hidden");
@@ -53,10 +52,37 @@
     overlay.appendChild(popup);
     root.appendChild(overlay);
 
+    // Exit-intent top banner (desktop): near browser chrome / tab close
+    exitBanner = el("div", "ecoleadbot-exit-banner ecoleadbot-hidden");
+    exitBanner.setAttribute("role", "dialog");
+    exitBanner.setAttribute("aria-label", "Предложение пройти проверку");
+    exitBanner.innerHTML =
+      '<div class="ecoleadbot-exit-banner__accent" aria-hidden="true"></div>' +
+      '<button type="button" class="ecoleadbot-exit-banner__dismiss" aria-label="Закрыть">×</button>' +
+      '<div class="ecoleadbot-exit-banner__title">Уходите? Узнайте за 2 минуты — что нужно по экологии</div>' +
+      '<p class="ecoleadbot-exit-banner__text">Короткий опрос: документы, риски и когда нужен специалист.</p>' +
+      '<button type="button" class="ecoleadbot-exit-banner__cta">Понять, что нужно</button>';
+    exitBanner.querySelector(".ecoleadbot-exit-banner__cta").addEventListener("click", function () {
+      hideExitBanner();
+      openPopup("exit_popup", "exit_intent");
+    });
+    exitBanner.querySelector(".ecoleadbot-exit-banner__dismiss").addEventListener("click", function () {
+      hideExitBanner();
+      track("exit_banner_dismissed");
+    });
+    root.appendChild(exitBanner);
+
     document.body.appendChild(root);
 
     document.addEventListener("keydown", function (e) {
-      if (e.key === "Escape" && !overlay.classList.contains("ecoleadbot-hidden")) closePopup();
+      if (e.key !== "Escape") return;
+      if (overlay && !overlay.classList.contains("ecoleadbot-hidden")) {
+        closePopup();
+        return;
+      }
+      if (typeof isExitBannerVisible === "function" && isExitBannerVisible()) {
+        hideExitBanner();
+        track("exit_banner_dismissed");
+      }
     });
   }
-

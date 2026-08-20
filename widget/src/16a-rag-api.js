@@ -3,6 +3,11 @@
      ----------------------------------------------------------------------- */
   function getRagApiUrl() {
     if (ECOLEADBOT_CONFIG.ragApiUrl) return ECOLEADBOT_CONFIG.ragApiUrl;
+    /* Prefer widget host (elb.ecolusspb.ru), not the embedding page origin. */
+    var base = getAssetBaseUrl();
+    if (base && /^https?:\/\//i.test(base)) {
+      return base.replace(/\/$/, "") + "/api/rag/ask";
+    }
     return location.origin + "/api/rag/ask";
   }
 
@@ -11,7 +16,7 @@
     if (t.length <= 320) return t;
     var cut = t.slice(0, 317);
     var dot = cut.lastIndexOf(". ");
-    if (dot > 180) return cut.slice(0, dot + 1).trim();
+    if (dot > 180) return cut.slice(0, dot + 1).trim() + "…";
     var sp = cut.lastIndexOf(" ");
     if (sp > 250) return cut.slice(0, sp).trim() + "…";
     return cut.trim() + "…";
@@ -26,13 +31,31 @@
     return parts.join(", ");
   }
 
+  function getRagQuestionForCrm() {
+    if (state.rag_entry_type === "podrobnee") {
+      var title = String(state.mini_zone_rag_title || "").trim();
+      if (title) return "Подробнее: " + title;
+      if (state.rag_from_template) return "Подробнее (мини-оценка)";
+      var q = String(state.rag_question || "").trim();
+      /* Engineered API prompt must not appear as «вопрос пользователя». */
+      if (!q || /^Дай краткий экспертный ответ/i.test(q)) {
+        return "Подробнее (мини-оценка)";
+      }
+      return q;
+    }
+    return String(state.rag_question || "").trim();
+  }
+
   function buildRagCommentBlock() {
-    if (!state.rag_question) return "";
+    if (!state.rag_question && !state.rag_answer && !state.rag_answer_summary) return "";
+    var isPodrobnee = state.rag_entry_type === "podrobnee";
+    var questionLabel = isPodrobnee ? "Запрос «Подробнее»:" : "Вопрос пользователя:";
+    var questionText = getRagQuestionForCrm();
     return [
       "=== Вопрос ассистенту ===",
       "",
-      "Вопрос пользователя:",
-      state.rag_question,
+      questionLabel,
+      questionText || "—",
       "",
       "Краткий ответ ассистента:",
       state.rag_answer_summary || summarizeRagAnswer(state.rag_answer),
@@ -41,7 +64,7 @@
       state.rag_assistant_recommendation || "",
       "",
       "Источник перехода:",
-      state.rag_entry_type === "podrobnee" ? "Подробнее (мини-оценка)" : "Ассистент по базе знаний",
+      isPodrobnee ? "Подробнее (мини-оценка)" : "Ассистент по базе знаний",
       "",
       "Возможный сигнал экосопровождения:",
       state.rag_es_signal || "неизвестно"
@@ -79,7 +102,7 @@
     if ((state.mini_zones || []).length) pts++;
     if (state.selected_direction) pts++;
     if (state.document_nvos_registry) pts++;
-    if (state.rag_question && state.rag_answer) pts++;
+    if (state.rag_answer) pts++;
     return pts;
   }
 

@@ -18,7 +18,9 @@ from openai import APIConnectionError, APITimeoutError, OpenAI
 ROOT = Path(__file__).resolve().parent
 PROMPT_PATH = ROOT / "prompts" / "ecoleadbot_rag_system_prompt.md"
 MAX_QUESTION_LEN = 1500
-MAX_ANSWER_LEN = 1200
+# ~2000 токенов ответа (кириллица ≈ 2–3 символа/токен) + запас под JSON; жёсткий потолок после модели.
+MAX_ANSWER_LEN = 5500
+MAX_OUTPUT_TOKENS = 2000
 
 logger = logging.getLogger("ecoleadbot.rag")
 
@@ -354,13 +356,19 @@ def _normalize_confidence(value: Any) -> str:
 
 
 def _truncate_answer(text: str) -> str:
+    """Обрезать ответ по лимиту символов, предпочитая конец предложения."""
     text = (text or "").strip()
     if len(text) <= MAX_ANSWER_LEN:
         return text
     cut = text[:MAX_ANSWER_LEN]
-    for sep in (". ", "! ", "? ", ".\n", ";\n"):
+    for sep in (". ", "! ", "? ", ".\n", "!\n", "?\n", ";\n", "…\n"):
         idx = cut.rfind(sep)
         if idx > MAX_ANSWER_LEN * 0.55:
+            # Оставляем знак конца предложения (первый символ sep).
+            return cut[: idx + 1].rstrip() + "…"
+    for sep in (".", "!", "?"):
+        idx = cut.rfind(sep)
+        if idx > MAX_ANSWER_LEN * 0.7:
             return cut[: idx + 1].rstrip() + "…"
     idx = cut.rfind(" ")
     if idx > MAX_ANSWER_LEN * 0.7:
@@ -448,6 +456,7 @@ def ask_rag(
             model=model,
             instructions=system_prompt,
             input=user_message,
+            max_output_tokens=MAX_OUTPUT_TOKENS,
             tools=[{
                 "type": "file_search",
                 "vector_store_ids": [vector_store_id],

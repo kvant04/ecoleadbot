@@ -49,6 +49,13 @@
     linkWrap.appendChild(ragLink);
     actions.appendChild(linkWrap);
 
+    var closeLinkWrap = el("div", "ecoleadbot-intro__link-wrap ecoleadbot-intro__close-wrap");
+    var closeLink = el("button", "ecoleadbot-intro__link", "Закрыть");
+    closeLink.type = "button";
+    closeLink.addEventListener("click", closePopup);
+    closeLinkWrap.appendChild(closeLink);
+    actions.appendChild(closeLinkWrap);
+
     introBody.appendChild(actions);
     screen.appendChild(introBody);
 
@@ -79,6 +86,16 @@
     ragBtn.type = "button";
     ragBtn.addEventListener("click", openRagEntry);
     actions.appendChild(ragBtn);
+
+    var retryBtn = el("button", "ecoleadbot-btn ecoleadbot-btn--secondary ecoleadbot-btn--block", "Повторить");
+    retryBtn.type = "button";
+    retryBtn.addEventListener("click", openDocumentBranch);
+    actions.appendChild(retryBtn);
+
+    var closeBtn = el("button", "ecoleadbot-btn ecoleadbot-btn--ghost ecoleadbot-btn--block", "Закрыть");
+    closeBtn.type = "button";
+    closeBtn.addEventListener("click", closePopup);
+    actions.appendChild(closeBtn);
 
     screen.appendChild(actions);
     bodyEl.innerHTML = "";
@@ -328,7 +345,7 @@
       });
     } else {
       var options = q.id === "activity_type" ? ACTIVITY_TYPE_OPTIONS : (q.options || []);
-      var selected = state.answers[q.id];
+      var selected = ensureAnswers()[q.id];
       options.forEach(function (opt) {
         var card = el("button", "ecoleadbot-card");
         card.type = "button";
@@ -357,7 +374,7 @@
       var nextBtn = el("button", "ecoleadbot-btn ecoleadbot-btn--primary ecoleadbot-btn--block", "Далее");
       nextBtn.type = "button";
       nextBtn.addEventListener("click", function () {
-        var sel = q.id === "object_signals" ? state.object_signals : state.answers[q.id];
+        var sel = q.id === "object_signals" ? state.object_signals : ensureAnswers()[q.id];
         if (!Array.isArray(sel) || sel.length === 0) {
           nextBtn.classList.add("is-error");
           multiHint.textContent = "Выберите хотя бы один пункт";
@@ -405,25 +422,26 @@
       if (pos === -1) arr.push(signalId); else arr.splice(pos, 1);
     }
     state.object_signals = arr;
-    state.answers.object_signals = arr;
+    ensureAnswers().object_signals = arr;
     persist();
     syncObjectSignalCardsUi(optionsWrap);
   }
 
   function selectSingle(q, opt, index) {
-    state.answers[q.id] = opt;
+    ensureAnswers()[q.id] = opt;
     syncMainFlowAnswerFields(q.id, opt);
     persist();
     advanceFromQuestion(index);
   }
 
   function toggleMultiple(q, opt, optionsWrap) {
-    var arr = Array.isArray(state.answers[q.id]) ? state.answers[q.id].slice() : [];
+    var answers = ensureAnswers();
+    var arr = Array.isArray(answers[q.id]) ? answers[q.id].slice() : [];
     var pos = arr.indexOf(opt);
     if (pos === -1) arr.push(opt); else arr.splice(pos, 1);
-    state.answers[q.id] = arr;
+    answers[q.id] = arr;
     persist();
-    syncOptionCardsUi(optionsWrap, q.id, "multi", state.answers);
+    syncOptionCardsUi(optionsWrap, q.id, "multi", answers);
   }
 
   function advanceFromQuestion(index) {
@@ -511,7 +529,7 @@
     return [
       "Пробегитесь по чек-листу — отметьте, что уже есть под рукой",
       "Нажмите «Подробнее» по интересному направлению",
-      "Оставьте контакты — специалист уточнит детали по вашему объекту"
+      "Оставьте контакты для более предметного разговора с нашим специалистом"
     ];
   }
 
@@ -540,7 +558,7 @@
       card.appendChild(tags);
     }
 
-    var checklistTitle = el("h4", "ecoleadbot-mini-card__subtitle", "Для подготовки к разговору с нашим специалистом");
+    var checklistTitle = el("h4", "ecoleadbot-mini-card__subtitle", "Для подготовки к разговору с нашим специалистом могут понадобиться:");
     card.appendChild(checklistTitle);
     var checklist = el("ul", "ecoleadbot-mini-card__list");
     buildMiniChecklistItems().forEach(function (item) {
@@ -614,6 +632,8 @@
   function openMiniZonePodrobnee(zone) {
     if (!zone) return;
     state.flow = state.flow || "main";
+    state.mini_zone_rag_id = zone.id || "";
+    state.mini_zone_rag_title = zone.title || "";
     state.rag_from_template = false;
     state.rag_answer_html = "";
     state.rag_podrobnee_template_key = "";
@@ -660,7 +680,6 @@
     var result = el("div", "ecoleadbot-result");
 
     if (!zones.length) {
-      appendMiniResultValueBlock(screen);
       result.innerHTML = "<p>" + escapeHtml(MINI_RESULT[pickMiniResultType()]) + "</p>";
       screen.appendChild(result);
       appendMiniResultActions(screen);
@@ -687,4 +706,3 @@
       result.appendChild(blocks);
     });
   }
-

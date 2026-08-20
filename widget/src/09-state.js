@@ -37,6 +37,7 @@
       entry_page_type: detectPageType(),
       rag_question: "",
       rag_answer: "",
+      rag_answer_html: "",
       rag_answer_summary: "",
       rag_assistant_recommendation: "",
       rag_confidence: "",
@@ -45,6 +46,8 @@
       rag_es_signal: "",
       rag_entry_type: "",
       rag_error_kind: "",
+      rag_from_template: false,
+      rag_podrobnee_template_key: "",
       previous_screen: "",
       previous_question_index: null
     };

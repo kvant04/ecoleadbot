@@ -31,6 +31,10 @@
     appendFinalMediaLinks(screen);
 
     var actions = el("div", "ecoleadbot-intro__actions");
+    var retryBtn = el("button", "ecoleadbot-btn ecoleadbot-btn--secondary ecoleadbot-btn--block", "Пройти заново");
+    retryBtn.type = "button";
+    retryBtn.addEventListener("click", resetSessionToIntro);
+    actions.appendChild(retryBtn);
     appendPostSubmitNavActions(actions);
     screen.appendChild(actions);
 

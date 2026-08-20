@@ -1,0 +1,11 @@
+Готово, без deploy и commit.
+
+Изменено:
+
+- Auto/scroll popup больше не resume mid-flow; показывают intro.
+- User-triggered открытия сохраняют resume.
+- `beforeunload` выставляет cooldown при открытом overlay.
+- Версия обновлена до `1.5.43`.
+- Сборка успешна: `py scripts/build_widget.py`.
+- Проверка `node --check app.js` пройдена.
+- Отчёт: [003-auto-popup-resume.md](D:\ELB c ИИ RAG для выпускного проекта\dev documentation\codex\reports\003-auto-popup-resume.md)

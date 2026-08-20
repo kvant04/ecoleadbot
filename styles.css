@@ -8,45 +8,6 @@
 /* -------------------------------------------------------------------------
    Демо-страница-хост (не часть виджета)
    ------------------------------------------------------------------------- */
-* { box-sizing: border-box; }
-
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  color: #1f2933;
-  background: #f5f7fa;
-  line-height: 1.6;
-}
-
-.site-header {
-  background: #ffffff;
-  border-bottom: 1px solid #e4e9f0;
-}
-.site-header__inner,
-.site-footer__inner {
-  max-width: 820px;
-  margin: 0 auto;
-  padding: 16px 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-.site-logo { font-weight: 700; color: #2f855a; }
-.site-nav a { margin-left: 16px; color: #52606d; text-decoration: none; font-size: 14px; }
-.site-nav a:hover { color: #2f855a; }
-
-.site-main { max-width: 820px; margin: 0 auto; padding: 32px 20px 80px; }
-.article-content h1 { font-size: 28px; line-height: 1.25; margin: 0 0 16px; }
-.article-content h2 { font-size: 21px; margin: 32px 0 12px; }
-.article-lead { font-size: 18px; color: #3e4c59; }
-.article-content p { margin: 0 0 16px; }
-
-.site-footer { background: #ffffff; border-top: 1px solid #e4e9f0; }
-.site-footer__inner { font-size: 13px; color: #7b8794; }
-.site-footer__inner a { color: #7b8794; }
-
 /* =========================================================================
    ПЕРЕМЕННЫЕ ВИДЖЕТА
    ========================================================================= */
@@ -149,6 +110,88 @@ body {
 .ecoleadbot-inline-cta__btn:hover { background: var(--eco-accent-hover); }
 
 /* =========================================================================
+   EXIT-INTENT BANNER (top-right, near browser tab close)
+   ========================================================================= */
+.ecoleadbot-exit-banner {
+  position: fixed;
+  top: calc(72px + env(safe-area-inset-top, 0px));
+  right: 16px;
+  z-index: 2147483500;
+  width: min(380px, calc(100vw - 32px));
+  padding: 18px 20px 16px;
+  border-radius: var(--eco-radius);
+  background: var(--eco-bg);
+  border: 1px solid var(--eco-border);
+  box-shadow: 0 16px 40px rgba(15, 30, 25, 0.28), 0 0 0 1px rgba(47, 133, 90, 0.12);
+  opacity: 0;
+  transform: translateY(-14px);
+  transition: opacity var(--eco-transition), transform var(--eco-transition);
+  pointer-events: auto;
+}
+.ecoleadbot-exit-banner.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.ecoleadbot-exit-banner__accent {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  border-radius: var(--eco-radius) var(--eco-radius) 0 0;
+  background: linear-gradient(90deg, var(--eco-primary) 0%, var(--eco-accent) 100%);
+}
+.ecoleadbot-exit-banner__dismiss {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--eco-text-muted);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+}
+.ecoleadbot-exit-banner__dismiss:hover {
+  background: var(--eco-bg-soft);
+  color: var(--eco-text);
+}
+.ecoleadbot-exit-banner__title {
+  margin: 4px 28px 8px 0;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--eco-text);
+}
+.ecoleadbot-exit-banner__text {
+  margin: 0 0 14px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: var(--eco-text-muted);
+}
+.ecoleadbot-exit-banner__cta {
+  display: inline-block;
+  width: 100%;
+  padding: 12px 16px;
+  border: none;
+  border-radius: var(--eco-radius-sm);
+  background: var(--eco-accent);
+  color: #fff;
+  font-size: 15px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background var(--eco-transition);
+}
+.ecoleadbot-exit-banner__cta:hover { background: var(--eco-accent-hover); }
+
+@media (max-width: 767px) {
+  .ecoleadbot-exit-banner { display: none !important; }
+}
+
+/* =========================================================================
    POPUP CONTAINER (UX §5 / Frontend §10)
    Desktop: centered popup + backdrop. Mobile: fullscreen overlay.
    ========================================================================= */
@@ -183,15 +226,12 @@ body {
 .ecoleadbot-overlay.is-visible .ecoleadbot-popup { transform: translateY(0); }
 
 .ecoleadbot-close {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  z-index: 2;
-  width: 36px;
-  height: 36px;
+  flex: 0 0 44px;
+  width: 44px;
+  height: 44px;
   border: none;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--eco-bg-soft);
   color: var(--eco-text);
   font-size: 22px;
   line-height: 1;
@@ -204,8 +244,14 @@ body {
   flex: 0 0 auto;
   display: flex;
   align-items: center;
-  padding: 12px 48px 0 16px;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  padding: 8px 12px 8px 16px;
   min-height: 44px;
+  background: var(--eco-bg);
+  border-bottom: 1px solid var(--eco-border);
 }
 .ecoleadbot-header__logo {
   display: block;
@@ -483,10 +529,44 @@ body {
   padding: 16px 18px;
   border-radius: var(--eco-radius-sm);
   background: var(--eco-bg-soft);
-  margin-bottom: 16px;
+  margin-bottom: 8px;
   white-space: pre-wrap;
   line-height: 1.5;
   font-size: 15px;
+}
+.ecoleadbot-rag-answer.is-collapsed {
+  max-height: 11.5em;
+  overflow: hidden;
+  position: relative;
+}
+.ecoleadbot-rag-answer.is-collapsed::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2.8em;
+  background: linear-gradient(to bottom, rgba(248, 250, 252, 0), var(--eco-bg-soft));
+  pointer-events: none;
+}
+.ecoleadbot-rag-expand {
+  display: block;
+  width: 100%;
+  margin: 0 0 16px;
+  padding: 8px 0;
+  border: none;
+  background: transparent;
+  color: var(--eco-primary);
+  font: inherit;
+  font-size: 14px;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+.ecoleadbot-rag-expand:hover,
+.ecoleadbot-rag-expand:focus {
+  text-decoration: underline;
+  outline: none;
 }
 .ecoleadbot-rag-sources {
   margin-bottom: 16px;
@@ -639,7 +719,13 @@ body {
 @media (max-width: 767px) {
   .ecoleadbot-widget { right: 14px; bottom: 14px; padding: 12px 16px; font-size: 14px; }
 
-  .ecoleadbot-overlay { padding: 0; align-items: stretch; }
+  .ecoleadbot-overlay {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 2147483646;
+    padding: 0;
+    align-items: stretch;
+  }
   .ecoleadbot-popup {
     max-width: 100%;
     width: 100%;
@@ -647,6 +733,19 @@ body {
     max-height: 100%;
     border-radius: 0;
     transform: translateY(0);
+  }
+  .ecoleadbot-header {
+    padding-top: calc(8px + env(safe-area-inset-top, 0px));
+    padding-right: calc(12px + env(safe-area-inset-right, 0px));
+    padding-left: calc(16px + env(safe-area-inset-left, 0px));
+  }
+  .ecoleadbot-close {
+    min-width: 44px;
+    min-height: 44px;
+    opacity: 1 !important;
+    background: var(--eco-primary);
+    color: #fff;
+    font-size: 26px;
   }
   .ecoleadbot-title { font-size: 20px; }
   .ecoleadbot-card { padding: 16px; font-size: 16px; }
@@ -663,5 +762,8 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .ecoleadbot-root *, .ecoleadbot-overlay, .ecoleadbot-popup { transition: none !important; animation: none !important; }
+  .ecoleadbot-root *, .ecoleadbot-overlay, .ecoleadbot-popup, .ecoleadbot-exit-banner {
+    transition: none !important;
+    animation: none !important;
+  }
 }

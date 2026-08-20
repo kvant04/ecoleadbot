@@ -43,7 +43,7 @@
     disqualified_pdv_ndv_iv: {
       gate_id: "disqualified_pdv_ndv_iv",
       gtm_event: "disqualified_pdv_ndv_iv",
-      title: "Проект ПДВ/НДВ, скорее всего, не нужен",
+      title: "Проект НДВ, скорее всего, не нужен",
       body: "Для объектов IV категории НВОС (негативное воздействие на окружающую среду) нормативы допустимых выбросов (НДВ) обычно не разрабатывают.\n\nМы не оформляем онлайн-заявку на эту услугу для IV категории. Выберите другую услугу или начните с общей консультации."
     },
     disqualified_pnool_iii_iv: {
@@ -71,6 +71,12 @@
    * Без заявки в CRM; события disqualified_procurement / disqualified_no_advance.
    */
   var CLIENT_GATE_DEFS = {
+    disqualified_individual: {
+      gate_id: "disqualified_individual",
+      gtm_event: "disqualified_individual",
+      title: "Работаем с организациями и ИП",
+      body: "Наша компания не оказывает услуги физическим лицам: экологические документы оформляются для предпринимательской деятельности.\n\nВместо этого вы можете воспользоваться платной консультацией ведущего эколога."
+    },
     disqualified_procurement: {
       gate_id: "disqualified_procurement",
       gtm_event: "disqualified_procurement",
@@ -98,6 +104,15 @@
   ];
 
   var CLIENT_TERMS_BLOCKS = [
+    {
+      id: "client_entity_type",
+      text: "Вы обращаетесь как?",
+      type: "single",
+      options: [
+        "Юридическое лицо или ИП",
+        "Физическое лицо (лично / дача / для себя)"
+      ]
+    },
     {
       id: "client_contract",
       text: "Как планируете заключать договор?",
@@ -133,8 +148,15 @@
     return !!(answer && /^Нет/.test(answer));
   }
 
+  function isIndividualClientAnswer(answer) {
+    return !!(answer && answer.indexOf("Физическое лицо") !== -1);
+  }
+
   function evaluateClientTermsGate() {
     var qa = state.client_terms_answers || {};
+    if (isIndividualClientAnswer(qa.client_entity_type)) {
+      return CLIENT_GATE_DEFS.disqualified_individual;
+    }
     if (isProcurementContractAnswer(qa.client_contract)) {
       return CLIENT_GATE_DEFS.disqualified_procurement;
     }
@@ -191,14 +213,24 @@
     icon.textContent = "ℹ";
     screen.appendChild(icon);
 
-    screen.appendChild(el("h2", "ecoleadbot-title", gate.title));
+    screen.appendChild(el("h2", "ecoleadbot-title", escapeHtml(gate.title)));
     String(gate.body || "").split("\n\n").forEach(function (para) {
       if (para.trim()) {
-        screen.appendChild(el("p", "ecoleadbot-subtitle ecoleadbot-service-gate__p", para.trim()));
+        screen.appendChild(el("p", "ecoleadbot-subtitle ecoleadbot-service-gate__p",
+          escapeHtml(para.trim())));
       }
     });
 
     var actions = el("div", "ecoleadbot-actions ecoleadbot-actions--sticky");
+    if (gate.gate_id === "disqualified_individual") {
+      var consultationLink = el("a",
+        "ecoleadbot-btn ecoleadbot-btn--secondary ecoleadbot-btn--block",
+        "Консультация ведущего эколога");
+      consultationLink.href = "https://ecolusspb.ru/services/konsultatsiya-ot-vedushchego-ekologa/";
+      consultationLink.target = "_blank";
+      consultationLink.rel = "noopener noreferrer";
+      actions.appendChild(consultationLink);
+    }
     var editBtn = el("button",
       "ecoleadbot-btn ecoleadbot-btn--primary ecoleadbot-btn--block",
       "Изменить ответы");
@@ -243,7 +275,7 @@
 
     screen.appendChild(el("h2", "ecoleadbot-title", "Условия сотрудничества"));
     screen.appendChild(el("p", "ecoleadbot-subtitle",
-      "Два коротких вопроса — чтобы сразу понять, сможем ли мы помочь в вашем формате."));
+      "Три коротких вопроса — чтобы сразу понять, сможем ли мы помочь в вашем формате."));
 
     CLIENT_TERMS_BLOCKS.forEach(function (block) {
       var section = el("div", "ecoleadbot-clarify-block");
@@ -274,7 +306,7 @@
       if (!validateQualBlocks(screen, CLIENT_TERMS_BLOCKS, answersNow, {
         nextBtn: nextBtn,
         hintEl: hint,
-        hintText: "Ответьте на оба вопроса выше"
+        hintText: "Ответьте на все вопросы выше"
       })) {
         return;
       }
@@ -374,11 +406,12 @@
     icon.textContent = "ℹ";
     screen.appendChild(icon);
 
-    screen.appendChild(el("h2", "ecoleadbot-title", gate.title));
+    screen.appendChild(el("h2", "ecoleadbot-title", escapeHtml(gate.title)));
     var bodyParts = String(gate.body || "").split("\n\n");
     bodyParts.forEach(function (para) {
       if (para.trim()) {
-        screen.appendChild(el("p", "ecoleadbot-subtitle ecoleadbot-service-gate__p", para.trim()));
+        screen.appendChild(el("p", "ecoleadbot-subtitle ecoleadbot-service-gate__p",
+          escapeHtml(para.trim())));
       }
     });
 

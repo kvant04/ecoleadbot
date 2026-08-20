@@ -1,12 +1,30 @@
   /* -----------------------------------------------------------------------
      1b. v1.4 DATA LAYER (Phase 0 — catalog + mini-assessment zones)
      ----------------------------------------------------------------------- */
-  function getScriptDirectoryUrl() {
+  /**
+   * Capture while this script executes (defer-safe). Later Bitrix/DOM cleanup
+   * may remove <script> tags — then getElementsByTagName no longer finds app.js
+   * and assets wrongly resolve to the host page origin (ecolusspb.ru → 404 logo).
+   */
+  var ASSET_BASE_URL = (function () {
     var scripts = document.getElementsByTagName("script");
     var i;
     for (i = scripts.length - 1; i >= 0; i--) {
       var src = scripts[i].src || "";
-      if (/app\.js|widget\.js|ecoleadbot/i.test(src)) {
+      if (/\/(?:app|widget)\.js(?:\?|#|$)/i.test(src) || /ecoleadbot[^/]*\.js(?:\?|#|$)/i.test(src)) {
+        return src.split("?")[0].split("#")[0].replace(/\/[^/]+$/, "/");
+      }
+    }
+    return "";
+  })();
+
+  function getScriptDirectoryUrl() {
+    if (ASSET_BASE_URL) return ASSET_BASE_URL;
+    var scripts = document.getElementsByTagName("script");
+    var i;
+    for (i = scripts.length - 1; i >= 0; i--) {
+      var src = scripts[i].src || "";
+      if (/\/(?:app|widget)\.js(?:\?|#|$)/i.test(src) || /ecoleadbot[^/]*\.js(?:\?|#|$)/i.test(src)) {
         return src.split("?")[0].split("#")[0].replace(/\/[^/]+$/, "/");
       }
     }
@@ -16,6 +34,11 @@
   function getAssetBaseUrl() {
     var scriptBase = getScriptDirectoryUrl();
     if (scriptBase) return scriptBase;
+    if (ECOLEADBOT_CONFIG.assetBaseUrl) {
+      return /\/$/.test(ECOLEADBOT_CONFIG.assetBaseUrl)
+        ? ECOLEADBOT_CONFIG.assetBaseUrl
+        : ECOLEADBOT_CONFIG.assetBaseUrl + "/";
+    }
     if (location.origin && location.protocol.indexOf("http") === 0) {
       return location.origin + "/";
     }
@@ -45,11 +68,28 @@
     return img;
   }
 
+  function fetchWithRetry(url, options, parseResponse, attempts) {
+    var attempt = 0;
+    var maxAttempts = attempts || 2;
+    function run() {
+      attempt += 1;
+      return fetch(url, options).then(function (res) {
+        if (!res.ok) throw new Error("HTTP " + res.status + " for " + url);
+        return parseResponse(res);
+      }).catch(function (err) {
+        if (attempt >= maxAttempts) throw err;
+        return new Promise(function (resolve) {
+          setTimeout(resolve, 250 * attempt);
+        }).then(run);
+      });
+    }
+    return run();
+  }
+
   function fetchJson(url) {
-    return fetch(url, { credentials: "same-origin" }).then(function (res) {
-      if (!res.ok) throw new Error("HTTP " + res.status + " for " + url);
+    return fetchWithRetry(url, { credentials: "omit" }, function (res) {
       return res.json();
-    });
+    }, 2);
   }
 
   function loadV14Data() {
@@ -69,6 +109,8 @@
       catalogV14 = null;
       zonesV14 = null;
       qualQuestionLabelsRu = null;
+      /* Allow retry after network/transient failure (do not cache rejected promise). */
+      catalogLoadPromise = null;
       throw err;
     });
     return catalogLoadPromise;
@@ -253,8 +295,7 @@
     var meta = getZonesMeta();
     var prefix = meta.zone_kb_template_prefix || "mini_assessment";
     var url = resolveDataUrl("kb/" + prefix + "/" + kbKey + ".md");
-    return fetch(url, { credentials: "same-origin" }).then(function (res) {
-      if (!res.ok) throw new Error("HTTP " + res.status);
+    return fetchWithRetry(url, { credentials: "omit" }, function (res) {
       return res.text();
     }).then(function (text) {
       zoneTemplateCache[kbKey] = text;
@@ -279,8 +320,7 @@
       return Promise.resolve(podrobneeTemplateCache[templateKey]);
     }
     var url = resolveDataUrl("kb/mini_assessment/" + templateKey + ".md");
-    return fetch(url, { credentials: "same-origin" }).then(function (res) {
-      if (!res.ok) throw new Error("HTTP " + res.status);
+    return fetchWithRetry(url, { credentials: "omit" }, function (res) {
       return res.text();
     }).then(function (text) {
       podrobneeTemplateCache[templateKey] = text;
@@ -343,7 +383,10 @@
   function showPodrobneeFromTemplate(zone, md, templateKey) {
     state.mini_zone_rag_id = zone.id || "";
     state.mini_zone_rag_title = zone.title || "";
-    state.rag_question = zone.rag_podrobnee_prompt || "";
+    /* CRM/payload: human topic, not internal rag_podrobnee_prompt */
+    state.rag_question = zone.title
+      ? ("Подробнее: " + zone.title)
+      : "Подробнее (мини-оценка)";
     state.rag_entry_type = "podrobnee";
     state.rag_from_template = true;
     state.rag_podrobnee_template_key = templateKey || "";
@@ -397,4 +440,3 @@
   function getUxRules() {
     return (catalogV14 && catalogV14.ux_rules) ? catalogV14.ux_rules : {};
   }
-

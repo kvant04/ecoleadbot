@@ -6,6 +6,9 @@
     /** Shared secret for n8n Header Auth. Set via ECOLEADBOT_SITE_CONFIG — never commit real value. */
     webhookSecret: "",
     ragApiUrl: "",
+    /** Static widget/data origin for embeds. Override via ECOLEADBOT_SITE_CONFIG. */
+    /** Fallback when script URL cannot be detected (Bitrix may remove <script>). */
+    assetBaseUrl: "https://elb.ecolusspb.ru/",
     logoUrl: "",
     logoAlt: "Экологические услуги",
     popupDelayMs: 45000,
@@ -18,7 +21,12 @@
     scrollDepthTrigger: 0.5,
     loadingMinMs: 700,
     /** Client-side abort for RAG fetch (ms). Server read timeout is higher. */
-    ragFetchTimeoutMs: 90000
+    ragFetchTimeoutMs: 90000,
+    /**
+     * Public Yandex Metrika counter on ecolusspb.ru (fallback when GTM has not
+     * yet created window.yaCounterXXXX). Not a secret.
+     */
+    yandexMetrikaCounterId: 22994308
   };
 
   /** Переопределение с хоста (deploy/sweb/elb-config.js на elb.ecolusspb.ru). */
@@ -31,10 +39,10 @@
   }
 
   var STORAGE_KEY = "ecoleadbot_session";
-  var WIDGET_VERSION = "1.5.20";
+  var WIDGET_VERSION = "1.5.50";
 
   /* Тестовая сборка: ?elb_test=1 или localhost / GitHub Pages demo.
-     В test build отключена anti-duplicate и доступна кнопка «Пройти заново». */
+     В test build отключена anti-duplicate; кнопка «Пройти заново» доступна во всех сборках. */
   function detectTestBuild() {
     try {
       var params = new URLSearchParams(location.search);
@@ -44,6 +52,16 @@
     return h === "localhost" || h === "127.0.0.1" || h.indexOf("github.io") !== -1;
   }
   var IS_TEST_BUILD = detectTestBuild();
+
+  /** Advertising deep-link: open the popup immediately without consuming UTM params. */
+  function shouldOpenFromUrl() {
+    try {
+      var params = new URLSearchParams(location.search);
+      return params.get("elb_open") === "1" || params.get("ecoleadbot_open") === "1";
+    } catch (e) {
+      return false;
+    }
+  }
 
   var V14_DATA_PATHS = {
     catalog: "data/services_catalog_v1.4.json",
@@ -82,7 +100,7 @@
       },
       vozduh: {
         kb_zone_key: "zone_vozduh",
-        rag_podrobnee_prompt: "Что проверить по выбросам в атмосферу: учёт НВОС, ПДВ, инвентаризация источников?"
+        rag_podrobnee_prompt: "Что проверить по выбросам в атмосферу: учёт НВОС, НДВ, инвентаризация источников?"
       },
       voda: {
         kb_zone_key: "zone_voda",
@@ -154,4 +172,3 @@
   var qualQuestionLabelsRu = null;
   var catalogLoadError = null;
   var catalogLoadPromise = null;
-

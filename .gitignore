@@ -45,3 +45,7 @@ reports/services_raw.json
 bitrix_deals.*
 friend_companies.*
 intersections_*
+
+# Runtime state отчётов Метрики (живёт на VPS)
+data/metrika_state/
+data/metrika_report_state.json

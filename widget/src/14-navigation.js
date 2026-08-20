@@ -6,6 +6,22 @@
     renderIntro();
   }
 
+  /** Wait for catalog JSON (or show error). Avoid blank document screens on resume. */
+  function ensureCatalogThen(onReady) {
+    function run() {
+      if (isCatalogReady()) {
+        onReady();
+        return;
+      }
+      renderDocumentCatalogError();
+    }
+    if (isCatalogReady()) {
+      onReady();
+      return;
+    }
+    loadV14Data().then(run).catch(run);
+  }
+
   /* v1.4: ветка «конкретная услуга» — направления и услуги из catalogV14 (фаза 1: навигация). */
   function openDocumentBranch() {
     state.flow = "document";
@@ -14,11 +30,7 @@
     state.document_nvos_registry = "";
     resetQualForDocumentDirectionChange();
     track("document_branch_opened", { session_id: state.session_id });
-    if (!isCatalogReady()) {
-      renderDocumentCatalogError();
-      return;
-    }
-    renderDocumentDirections();
+    ensureCatalogThen(renderDocumentDirections);
   }
 
   function startMainFlow() {
@@ -35,8 +47,10 @@
   }
 
   function openRagEntry(entryType) {
+    // Click listeners pass MouseEvent as 1st arg — only accept explicit string entry types.
+    var type = (typeof entryType === "string" && entryType) ? entryType : "question_link";
     state.flow = "rag";
-    state.rag_entry_type = entryType || "question_link";
+    state.rag_entry_type = type;
     track("rag_entry_opened", { session_id: state.session_id, rag_entry_type: state.rag_entry_type });
     renderRagQuestion();
   }

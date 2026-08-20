@@ -227,7 +227,7 @@
   }
 
   function syncMainFlowStateFromAnswers() {
-    var a = state.answers || {};
+    var a = ensureAnswers();
     if (a.activity_type) state.activity_type = a.activity_type;
     else if (a.object_type && !state.activity_type) {
       a.activity_type = a.object_type;
@@ -239,26 +239,27 @@
     }
     if (a.nvos_category) state.nvos_category = a.nvos_category;
     if (a.sites_count) state.sites_count = a.sites_count;
-    if (!state.qualification_answers) state.qualification_answers = {};
+    ensureQualificationAnswers();
     getClarifyBlocks(getActiveObjectSignals()).forEach(function (block) {
       if (a[block.id] != null) state.qualification_answers[block.id] = a[block.id];
     });
   }
 
   function syncMainFlowAnswerFields(stepId, value) {
+    var answers = ensureAnswers();
     if (stepId === "activity_type") {
       state.activity_type = value;
-      state.answers.activity_type = value;
-      state.answers.object_type = value;
+      answers.activity_type = value;
+      answers.object_type = value;
     } else if (stepId === "object_signals") {
       state.object_signals = value;
-      state.answers.object_signals = value;
+      answers.object_signals = value;
     } else if (stepId === "nvos_category") {
       state.nvos_category = value;
-      state.answers.nvos_category = value;
+      answers.nvos_category = value;
     } else if (stepId === "sites_count") {
       state.sites_count = value;
-      state.answers.sites_count = value;
+      answers.sites_count = value;
     }
   }
 

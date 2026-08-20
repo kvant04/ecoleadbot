@@ -1,6 +1,38 @@
   /* -----------------------------------------------------------------------
      13b2. RAG UI SCREENS
      ----------------------------------------------------------------------- */
+  /** Порог свёртки длинного ответа (символы plain text). */
+  var RAG_ANSWER_COLLAPSE_CHARS = 700;
+
+  /**
+   * Если ответ длинный — свернуть с кнопкой «Показать полностью» / «Свернуть».
+   * Полный текст остаётся в DOM; обрезка только визуальная (CSS max-height).
+   */
+  function mountRagAnswerExpand(screen, answerDiv) {
+    var plain = String(state.rag_answer || answerDiv.textContent || "").trim();
+    if (plain.length <= RAG_ANSWER_COLLAPSE_CHARS) return;
+
+    answerDiv.classList.add("is-collapsed");
+    var toggle = el("button", "ecoleadbot-rag-expand", "Показать полностью");
+    toggle.type = "button";
+    toggle.setAttribute("aria-expanded", "false");
+    toggle.addEventListener("click", function () {
+      var expanded = answerDiv.classList.contains("is-expanded");
+      if (expanded) {
+        answerDiv.classList.remove("is-expanded");
+        answerDiv.classList.add("is-collapsed");
+        toggle.textContent = "Показать полностью";
+        toggle.setAttribute("aria-expanded", "false");
+      } else {
+        answerDiv.classList.remove("is-collapsed");
+        answerDiv.classList.add("is-expanded");
+        toggle.textContent = "Свернуть";
+        toggle.setAttribute("aria-expanded", "true");
+      }
+    });
+    screen.appendChild(toggle);
+  }
+
   function renderRagQuestion() {
     setScreen("rag_question");
     hideProgress();
@@ -12,7 +44,7 @@
 
     screen.appendChild(el("h2", "ecoleadbot-title", "Есть вопрос?"));
     screen.appendChild(el("p", "ecoleadbot-subtitle",
-      "Отвечу по базе знаний компании и нормативным документам. " +
+      "Отвечу на основании базы знаний и нормативных документов. " +
       "Если вопрос сложный — предложу консультацию специалиста."));
 
     var field = el("div", "ecoleadbot-field");
@@ -62,8 +94,8 @@
   }
 
   function retryRagQuestion() {
-    if (state.rag_entry_type === "podrobnee" && state.rag_question) {
-      submitRagQuestion(state.rag_question, "podrobnee");
+    if ((state.rag_question || "").trim()) {
+      submitRagQuestion(state.rag_question, state.rag_entry_type || "rag_question");
       return;
     }
     renderRagQuestion();
@@ -140,6 +172,7 @@
         answerText = maybeAppendKoapToAnswer(answerText, tplKey || "default", data.confidence || "");
       }
       state.rag_answer = answerText;
+      state.rag_answer_html = markdownToDisplayHtml(answerText);
       state.rag_answer_summary = summarizeRagAnswer(state.rag_answer);
       state.rag_assistant_recommendation = data.assistant_recommendation || "";
       state.rag_confidence = data.confidence || "";
@@ -194,21 +227,29 @@
     var answerTitle = isPodrobnee
       ? ("Подробнее: " + (state.mini_zone_rag_title || "оценка"))
       : "Ответ";
-    screen.appendChild(el("h2", "ecoleadbot-title", answerTitle));
+    /* escapeHtml: title may include zone name from JSON config via state.mini_zone_rag_title */
+    screen.appendChild(el("h2", "ecoleadbot-title", escapeHtml(answerTitle)));
     var answerDiv = el("div", "ecoleadbot-rag-answer");
+    if (!state.rag_answer_html && state.rag_answer) {
+      state.rag_answer_html = markdownToDisplayHtml(state.rag_answer);
+      persist();
+    }
     if (state.rag_answer_html) {
       answerDiv.innerHTML = state.rag_answer_html;
     } else {
       answerDiv.textContent = state.rag_answer || "";
     }
     screen.appendChild(answerDiv);
+    /* Длинный ответ: свёрнутый превью + «Показать полностью» (вариант C). */
+    mountRagAnswerExpand(screen, answerDiv);
 
     if (state.rag_from_template) {
       var tplNote = el("p", "ecoleadbot-rag-template-note", "Готовый экспертный текст по вашим ответам");
       screen.appendChild(tplNote);
     }
 
-    if (state.rag_sources && state.rag_sources.length) {
+    /* Источники — только test build (?elb_test=1 / localhost); в prod UI не показываем. */
+    if (IS_TEST_BUILD && state.rag_sources && state.rag_sources.length) {
       var sourcesWrap = el("div", "ecoleadbot-rag-sources");
       var sourcesTitle = state.rag_sources.length > 1 ? "Источники:" : "Источник:";
       sourcesWrap.appendChild(el("div", "ecoleadbot-rag-sources__title", sourcesTitle));
@@ -233,7 +274,8 @@
       var consultBtn = el("button", "ecoleadbot-btn ecoleadbot-btn--secondary ecoleadbot-btn--block", "Получить консультацию");
       consultBtn.type = "button";
       consultBtn.addEventListener("click", function () {
-        state.answers.help_format = state.answers.help_format || "консультация специалиста";
+        var answers = ensureAnswers();
+        answers.help_format = answers.help_format || "консультация специалиста";
         state.previous_screen = "mini_result";
         state.previous_question_index = clampQuestionIndex(state.question_index);
         persist();
@@ -396,4 +438,3 @@
   function renderRagError() {
     renderRagTechnicalError();
   }
-

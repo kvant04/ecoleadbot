@@ -1,0 +1,12 @@
+Готово, блок C реализован.
+
+- CSS разделён: `styles.css` теперь widget-only, demo-правила перенесены в [demo-host.css](D:/ELB%20c%20%D0%98%D0%98%20RAG%20%D0%B4%D0%BB%D1%8F%20%D0%B2%D1%8B%D0%BF%D1%83%D1%81%D0%BA%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%BF%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D0%B0/demo-host.css).
+- Demo подключает оба CSS в правильном порядке.
+- Добавлена idempotent CSS auto-inject логика; `demo-host.css` на embed не загружается.
+- `demo-host.css` добавлен в deploy packaging.
+- Версия обновлена до `1.5.42`.
+- Сборка `py scripts/build_widget.py` прошла.
+- `node --check app.js` прошёл.
+- Отчёт: [002-css-isolation.md](D:/ELB%20c%20%D0%98%D0%98%20RAG%20%D0%B4%D0%BB%D1%8F%20%D0%B2%D1%8B%D0%BF%D1%83%D1%81%D0%BA%D0%BD%D0%BE%D0%B3%D0%BE%20%D0%BF%D1%80%D0%BE%D0%B5%D0%BA%D1%82%D0%B0/dev%20documentation/codex/reports/002-css-isolation.md).
+
+Commit и deploy не выполнялись.

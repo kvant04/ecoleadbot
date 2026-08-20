@@ -1,0 +1,8 @@
+Готово: блоки A+B выполнены, без commit и deploy.
+
+- Обновлены тексты в `widget/src/*`.
+- Exit-banner опущен до `top: calc(72px + env(safe-area-inset-top, 0px));`.
+- Версия: `1.5.40 → 1.5.41`.
+- `py scripts/build_widget.py` успешно собрал `app.js` из 27 фрагментов.
+- Проверены новые строки и CSS в исходниках и `app.js`.
+- Отчёт: [001-copy-and-exit-banner.md](D:\ELB c ИИ RAG для выпускного проекта\dev documentation\codex\reports\001-copy-and-exit-banner.md)

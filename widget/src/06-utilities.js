@@ -27,6 +27,7 @@
 
   function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
+  /** Create element. Third arg goes to innerHTML — escape untrusted/dynamic text with escapeHtml(). */
   function el(tag, className, html) {
     var e = document.createElement(tag);
     if (className) e.className = className;

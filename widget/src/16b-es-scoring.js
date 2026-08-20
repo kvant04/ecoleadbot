@@ -166,8 +166,8 @@
     blocks.forEach(function (block) {
       var lines = [block.title || ""];
       (block.fields || []).forEach(function (key) {
+        // object_signal_uncertain is covered by object_signals / fieldLine
         if (key === "object_signal_uncertain") return;
-        if (key === "activity_type" || key === "service_title") return;
         var line = fieldLine(key);
         if (line) lines.push(line);
       });
@@ -178,7 +178,11 @@
   }
 
   function goToContactFromRag() {
-    state.answers.help_format = "консультация специалиста";
+    var answers = ensureAnswers();
+    /* Keep quiz preference; only default when user never answered help_format. */
+    if (!(answers.help_format || "").trim()) {
+      answers.help_format = "консультация специалиста";
+    }
     if (!state.rag_entry_type) state.rag_entry_type = "rag_question";
     state.previous_screen = state.current_screen || (state.rag_answer ? "rag_answer" : "rag_question");
     persist();

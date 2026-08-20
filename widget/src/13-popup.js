@@ -1,8 +1,12 @@
   /* -----------------------------------------------------------------------
      11. POPUP OPEN / CLOSE
      ----------------------------------------------------------------------- */
-  function openPopup(entryType, trigger) {
+  function openPopup(entryType, trigger, options) {
+    options = options || {};
+    var shouldResume = options.resume !== false;
     if (overlay && !overlay.classList.contains("ecoleadbot-hidden")) return; // уже открыт
+
+    if (typeof hideExitBanner === "function") hideExitBanner();
 
     // entry_type только из допустимых значений схемы Этапа 4 §6.4
     var allowed = ["floating_widget", "inline_cta", "auto_popup", "exit_popup", "scroll_popup", "direct"];
@@ -21,7 +25,18 @@
     if (entryType === "inline_cta") track("inline_cta_clicked");
     track("popup_shown", { trigger: state.popup_trigger });
 
-    routeOnOpen();
+    if (shouldResume) {
+      routeOnOpen();
+    } else {
+      // Auto-open must not surface a saved mid-flow screen. Render only the
+      // current UI as intro, then restore the resumable cursor for persistence.
+      var resumeScreen = state.current_screen;
+      var resumeIndex = state.question_index;
+      renderIntro();
+      state.current_screen = resumeScreen;
+      state.question_index = resumeIndex;
+      persist();
+    }
   }
 
   function closePopup() {
@@ -33,7 +48,7 @@
     // cooldown только если не завершено/не отправлено
     if (state.status !== "completed" && !isAlreadySubmitted()) {
       state.popup_closed_at = now();
-      if (state.status === "started" && Object.keys(state.answers).length === 0) {
+      if (state.status === "started" && Object.keys(state.answers || {}).length === 0) {
         // не трогаем статус
       } else if (state.status !== "completed") {
         state.status = "partial";
@@ -46,23 +61,44 @@
   /* Куда вести при открытии popup */
   function routeOnOpen() {
     // Session resume (Frontend §19): продолжить с последнего экрана
-    if (state.current_screen === "question" && Object.keys(state.answers).length > 0) {
+    if (state.current_screen === "question" && Object.keys(state.answers || {}).length > 0) {
       migrateLegacyMainAnswers();
       syncMainFlowStateFromAnswers();
       renderQuestion(clampQuestionIndex(state.question_index));
       return;
     }
-    if (state.current_screen === "document_directions") { renderDocumentDirections(); return; }
-    if (state.current_screen === "document_nvos_filter") { renderDocumentNvosFilter(); return; }
-    if (state.current_screen === "document_services") { renderDocumentServices(); return; }
-    if (state.current_screen === "document_registry") { renderDocumentRegistryOnAccount(); return; }
-    if (state.current_screen === "document_nvos_category") { renderDocumentNvosCategory(); return; }
-    if (state.current_screen === "document_sites") { renderDocumentSites(); return; }
-    if (state.current_screen === "document_qualification") { renderDocumentQualification(); return; }
+    if (state.current_screen === "document_directions") {
+      ensureCatalogThen(renderDocumentDirections);
+      return;
+    }
+    if (state.current_screen === "document_nvos_filter") {
+      ensureCatalogThen(renderDocumentNvosFilter);
+      return;
+    }
+    if (state.current_screen === "document_services") {
+      ensureCatalogThen(renderDocumentServices);
+      return;
+    }
+    if (state.current_screen === "document_registry") {
+      ensureCatalogThen(renderDocumentRegistryOnAccount);
+      return;
+    }
+    if (state.current_screen === "document_nvos_category") {
+      ensureCatalogThen(renderDocumentNvosCategory);
+      return;
+    }
+    if (state.current_screen === "document_sites") {
+      ensureCatalogThen(renderDocumentSites);
+      return;
+    }
+    if (state.current_screen === "document_qualification") {
+      ensureCatalogThen(renderDocumentQualification);
+      return;
+    }
     if (state.current_screen === "service_gate") {
       var gateRestore = SERVICE_GATE_DEFS[state.last_service_gate_id];
       if (gateRestore) { renderServiceGate(gateRestore); return; }
-      renderDocumentServices();
+      ensureCatalogThen(renderDocumentServices);
       return;
     }
     if (state.current_screen === "client_gate") {
@@ -75,11 +111,18 @@
     if (state.current_screen === "document_error") { renderDocumentCatalogError(); return; }
     if (state.current_screen === "document_interest") {
       state.flow = "document";
-      if (isCatalogReady()) { renderDocumentDirections(); return; }
-      renderDocumentCatalogError();
+      ensureCatalogThen(renderDocumentDirections);
       return;
     }
-    if (state.current_screen === "rag_loading") { renderRagQuestion(); return; }
+    if (state.current_screen === "rag_loading") {
+      /* In-flight fetch does not survive close/reload — re-submit saved question. */
+      if ((state.rag_question || "").trim()) {
+        submitRagQuestion(state.rag_question, state.rag_entry_type || "rag_question");
+      } else {
+        renderRagQuestion();
+      }
+      return;
+    }
     if (state.current_screen === "rag_no_answer") { renderRagNoAnswer(); return; }
     if (state.current_screen === "rag_error") { renderRagTechnicalError(); return; }
     if (state.current_screen === "loading") { renderContact(); return; }
@@ -100,4 +143,3 @@
 
     renderIntro();
   }
-

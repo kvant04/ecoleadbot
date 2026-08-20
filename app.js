@@ -19,6 +19,9 @@
     /** Shared secret for n8n Header Auth. Set via ECOLEADBOT_SITE_CONFIG — never commit real value. */
     webhookSecret: "",
     ragApiUrl: "",
+    /** Static widget/data origin for embeds. Override via ECOLEADBOT_SITE_CONFIG. */
+    /** Fallback when script URL cannot be detected (Bitrix may remove <script>). */
+    assetBaseUrl: "https://elb.ecolusspb.ru/",
     logoUrl: "",
     logoAlt: "Экологические услуги",
     popupDelayMs: 45000,
@@ -31,7 +34,12 @@
     scrollDepthTrigger: 0.5,
     loadingMinMs: 700,
     /** Client-side abort for RAG fetch (ms). Server read timeout is higher. */
-    ragFetchTimeoutMs: 90000
+    ragFetchTimeoutMs: 90000,
+    /**
+     * Public Yandex Metrika counter on ecolusspb.ru (fallback when GTM has not
+     * yet created window.yaCounterXXXX). Not a secret.
+     */
+    yandexMetrikaCounterId: 22994308
   };
 
   /** Переопределение с хоста (deploy/sweb/elb-config.js на elb.ecolusspb.ru). */
@@ -44,10 +52,10 @@
   }
 
   var STORAGE_KEY = "ecoleadbot_session";
-  var WIDGET_VERSION = "1.5.20";
+  var WIDGET_VERSION = "1.5.50";
 
   /* Тестовая сборка: ?elb_test=1 или localhost / GitHub Pages demo.
-     В test build отключена anti-duplicate и доступна кнопка «Пройти заново». */
+     В test build отключена anti-duplicate; кнопка «Пройти заново» доступна во всех сборках. */
   function detectTestBuild() {
     try {
       var params = new URLSearchParams(location.search);
@@ -57,6 +65,16 @@
     return h === "localhost" || h === "127.0.0.1" || h.indexOf("github.io") !== -1;
   }
   var IS_TEST_BUILD = detectTestBuild();
+
+  /** Advertising deep-link: open the popup immediately without consuming UTM params. */
+  function shouldOpenFromUrl() {
+    try {
+      var params = new URLSearchParams(location.search);
+      return params.get("elb_open") === "1" || params.get("ecoleadbot_open") === "1";
+    } catch (e) {
+      return false;
+    }
+  }
 
   var V14_DATA_PATHS = {
     catalog: "data/services_catalog_v1.4.json",
@@ -95,7 +113,7 @@
       },
       vozduh: {
         kb_zone_key: "zone_vozduh",
-        rag_podrobnee_prompt: "Что проверить по выбросам в атмосферу: учёт НВОС, ПДВ, инвентаризация источников?"
+        rag_podrobnee_prompt: "Что проверить по выбросам в атмосферу: учёт НВОС, НДВ, инвентаризация источников?"
       },
       voda: {
         kb_zone_key: "zone_voda",
@@ -167,16 +185,33 @@
   var qualQuestionLabelsRu = null;
   var catalogLoadError = null;
   var catalogLoadPromise = null;
-
   /* -----------------------------------------------------------------------
      1b. v1.4 DATA LAYER (Phase 0 — catalog + mini-assessment zones)
      ----------------------------------------------------------------------- */
-  function getScriptDirectoryUrl() {
+  /**
+   * Capture while this script executes (defer-safe). Later Bitrix/DOM cleanup
+   * may remove <script> tags — then getElementsByTagName no longer finds app.js
+   * and assets wrongly resolve to the host page origin (ecolusspb.ru → 404 logo).
+   */
+  var ASSET_BASE_URL = (function () {
     var scripts = document.getElementsByTagName("script");
     var i;
     for (i = scripts.length - 1; i >= 0; i--) {
       var src = scripts[i].src || "";
-      if (/app\.js|widget\.js|ecoleadbot/i.test(src)) {
+      if (/\/(?:app|widget)\.js(?:\?|#|$)/i.test(src) || /ecoleadbot[^/]*\.js(?:\?|#|$)/i.test(src)) {
+        return src.split("?")[0].split("#")[0].replace(/\/[^/]+$/, "/");
+      }
+    }
+    return "";
+  })();
+
+  function getScriptDirectoryUrl() {
+    if (ASSET_BASE_URL) return ASSET_BASE_URL;
+    var scripts = document.getElementsByTagName("script");
+    var i;
+    for (i = scripts.length - 1; i >= 0; i--) {
+      var src = scripts[i].src || "";
+      if (/\/(?:app|widget)\.js(?:\?|#|$)/i.test(src) || /ecoleadbot[^/]*\.js(?:\?|#|$)/i.test(src)) {
         return src.split("?")[0].split("#")[0].replace(/\/[^/]+$/, "/");
       }
     }
@@ -186,6 +221,11 @@
   function getAssetBaseUrl() {
     var scriptBase = getScriptDirectoryUrl();
     if (scriptBase) return scriptBase;
+    if (ECOLEADBOT_CONFIG.assetBaseUrl) {
+      return /\/$/.test(ECOLEADBOT_CONFIG.assetBaseUrl)
+        ? ECOLEADBOT_CONFIG.assetBaseUrl
+        : ECOLEADBOT_CONFIG.assetBaseUrl + "/";
+    }
     if (location.origin && location.protocol.indexOf("http") === 0) {
       return location.origin + "/";
     }
@@ -215,11 +255,28 @@
     return img;
   }
 
+  function fetchWithRetry(url, options, parseResponse, attempts) {
+    var attempt = 0;
+    var maxAttempts = attempts || 2;
+    function run() {
+      attempt += 1;
+      return fetch(url, options).then(function (res) {
+        if (!res.ok) throw new Error("HTTP " + res.status + " for " + url);
+        return parseResponse(res);
+      }).catch(function (err) {
+        if (attempt >= maxAttempts) throw err;
+        return new Promise(function (resolve) {
+          setTimeout(resolve, 250 * attempt);
+        }).then(run);
+      });
+    }
+    return run();
+  }
+
   function fetchJson(url) {
-    return fetch(url, { credentials: "same-origin" }).then(function (res) {
-      if (!res.ok) throw new Error("HTTP " + res.status + " for " + url);
+    return fetchWithRetry(url, { credentials: "omit" }, function (res) {
       return res.json();
-    });
+    }, 2);
   }
 
   function loadV14Data() {
@@ -239,6 +296,8 @@
       catalogV14 = null;
       zonesV14 = null;
       qualQuestionLabelsRu = null;
+      /* Allow retry after network/transient failure (do not cache rejected promise). */
+      catalogLoadPromise = null;
       throw err;
     });
     return catalogLoadPromise;
@@ -423,8 +482,7 @@
     var meta = getZonesMeta();
     var prefix = meta.zone_kb_template_prefix || "mini_assessment";
     var url = resolveDataUrl("kb/" + prefix + "/" + kbKey + ".md");
-    return fetch(url, { credentials: "same-origin" }).then(function (res) {
-      if (!res.ok) throw new Error("HTTP " + res.status);
+    return fetchWithRetry(url, { credentials: "omit" }, function (res) {
       return res.text();
     }).then(function (text) {
       zoneTemplateCache[kbKey] = text;
@@ -449,8 +507,7 @@
       return Promise.resolve(podrobneeTemplateCache[templateKey]);
     }
     var url = resolveDataUrl("kb/mini_assessment/" + templateKey + ".md");
-    return fetch(url, { credentials: "same-origin" }).then(function (res) {
-      if (!res.ok) throw new Error("HTTP " + res.status);
+    return fetchWithRetry(url, { credentials: "omit" }, function (res) {
       return res.text();
     }).then(function (text) {
       podrobneeTemplateCache[templateKey] = text;
@@ -513,7 +570,10 @@
   function showPodrobneeFromTemplate(zone, md, templateKey) {
     state.mini_zone_rag_id = zone.id || "";
     state.mini_zone_rag_title = zone.title || "";
-    state.rag_question = zone.rag_podrobnee_prompt || "";
+    /* CRM/payload: human topic, not internal rag_podrobnee_prompt */
+    state.rag_question = zone.title
+      ? ("Подробнее: " + zone.title)
+      : "Подробнее (мини-оценка)";
     state.rag_entry_type = "podrobnee";
     state.rag_from_template = true;
     state.rag_podrobnee_template_key = templateKey || "";
@@ -567,7 +627,6 @@
   function getUxRules() {
     return (catalogV14 && catalogV14.ux_rules) ? catalogV14.ux_rules : {};
   }
-
   /* -----------------------------------------------------------------------
      1c. v1.4 DOCUMENT BRANCH (Phase 4)
      ----------------------------------------------------------------------- */
@@ -613,7 +672,7 @@
     disqualified_pdv_ndv_iv: {
       gate_id: "disqualified_pdv_ndv_iv",
       gtm_event: "disqualified_pdv_ndv_iv",
-      title: "Проект ПДВ/НДВ, скорее всего, не нужен",
+      title: "Проект НДВ, скорее всего, не нужен",
       body: "Для объектов IV категории НВОС (негативное воздействие на окружающую среду) нормативы допустимых выбросов (НДВ) обычно не разрабатывают.\n\nМы не оформляем онлайн-заявку на эту услугу для IV категории. Выберите другую услугу или начните с общей консультации."
     },
     disqualified_pnool_iii_iv: {
@@ -641,6 +700,12 @@
    * Без заявки в CRM; события disqualified_procurement / disqualified_no_advance.
    */
   var CLIENT_GATE_DEFS = {
+    disqualified_individual: {
+      gate_id: "disqualified_individual",
+      gtm_event: "disqualified_individual",
+      title: "Работаем с организациями и ИП",
+      body: "Наша компания не оказывает услуги физическим лицам: экологические документы оформляются для предпринимательской деятельности.\n\nВместо этого вы можете воспользоваться платной консультацией ведущего эколога."
+    },
     disqualified_procurement: {
       gate_id: "disqualified_procurement",
       gtm_event: "disqualified_procurement",
@@ -668,6 +733,15 @@
   ];
 
   var CLIENT_TERMS_BLOCKS = [
+    {
+      id: "client_entity_type",
+      text: "Вы обращаетесь как?",
+      type: "single",
+      options: [
+        "Юридическое лицо или ИП",
+        "Физическое лицо (лично / дача / для себя)"
+      ]
+    },
     {
       id: "client_contract",
       text: "Как планируете заключать договор?",
@@ -703,8 +777,15 @@
     return !!(answer && /^Нет/.test(answer));
   }
 
+  function isIndividualClientAnswer(answer) {
+    return !!(answer && answer.indexOf("Физическое лицо") !== -1);
+  }
+
   function evaluateClientTermsGate() {
     var qa = state.client_terms_answers || {};
+    if (isIndividualClientAnswer(qa.client_entity_type)) {
+      return CLIENT_GATE_DEFS.disqualified_individual;
+    }
     if (isProcurementContractAnswer(qa.client_contract)) {
       return CLIENT_GATE_DEFS.disqualified_procurement;
     }
@@ -761,14 +842,24 @@
     icon.textContent = "ℹ";
     screen.appendChild(icon);
 
-    screen.appendChild(el("h2", "ecoleadbot-title", gate.title));
+    screen.appendChild(el("h2", "ecoleadbot-title", escapeHtml(gate.title)));
     String(gate.body || "").split("\n\n").forEach(function (para) {
       if (para.trim()) {
-        screen.appendChild(el("p", "ecoleadbot-subtitle ecoleadbot-service-gate__p", para.trim()));
+        screen.appendChild(el("p", "ecoleadbot-subtitle ecoleadbot-service-gate__p",
+          escapeHtml(para.trim())));
       }
     });
 
     var actions = el("div", "ecoleadbot-actions ecoleadbot-actions--sticky");
+    if (gate.gate_id === "disqualified_individual") {
+      var consultationLink = el("a",
+        "ecoleadbot-btn ecoleadbot-btn--secondary ecoleadbot-btn--block",
+        "Консультация ведущего эколога");
+      consultationLink.href = "https://ecolusspb.ru/services/konsultatsiya-ot-vedushchego-ekologa/";
+      consultationLink.target = "_blank";
+      consultationLink.rel = "noopener noreferrer";
+      actions.appendChild(consultationLink);
+    }
     var editBtn = el("button",
       "ecoleadbot-btn ecoleadbot-btn--primary ecoleadbot-btn--block",
       "Изменить ответы");
@@ -813,7 +904,7 @@
 
     screen.appendChild(el("h2", "ecoleadbot-title", "Условия сотрудничества"));
     screen.appendChild(el("p", "ecoleadbot-subtitle",
-      "Два коротких вопроса — чтобы сразу понять, сможем ли мы помочь в вашем формате."));
+      "Три коротких вопроса — чтобы сразу понять, сможем ли мы помочь в вашем формате."));
 
     CLIENT_TERMS_BLOCKS.forEach(function (block) {
       var section = el("div", "ecoleadbot-clarify-block");
@@ -844,7 +935,7 @@
       if (!validateQualBlocks(screen, CLIENT_TERMS_BLOCKS, answersNow, {
         nextBtn: nextBtn,
         hintEl: hint,
-        hintText: "Ответьте на оба вопроса выше"
+        hintText: "Ответьте на все вопросы выше"
       })) {
         return;
       }
@@ -944,11 +1035,12 @@
     icon.textContent = "ℹ";
     screen.appendChild(icon);
 
-    screen.appendChild(el("h2", "ecoleadbot-title", gate.title));
+    screen.appendChild(el("h2", "ecoleadbot-title", escapeHtml(gate.title)));
     var bodyParts = String(gate.body || "").split("\n\n");
     bodyParts.forEach(function (para) {
       if (para.trim()) {
-        screen.appendChild(el("p", "ecoleadbot-subtitle ecoleadbot-service-gate__p", para.trim()));
+        screen.appendChild(el("p", "ecoleadbot-subtitle ecoleadbot-service-gate__p",
+          escapeHtml(para.trim())));
       }
     });
 
@@ -1075,10 +1167,6 @@
     advanceDocumentBranch(null);
   }
 
-  function getDocumentContactPreviousScreen() {
-    return "client_terms";
-  }
-
   function getNvosListGroup(svc) {
     if (!svc) return "standalone";
     if (svc.id === "postanovka-nvos") return "first";
@@ -1133,15 +1221,16 @@
   }
 
   function syncObjectFieldsFromQual() {
+    var answers = ensureAnswers();
     var nvos = resolveNvosCategory();
     var sites = resolveSitesCount();
     if (nvos) {
       state.nvos_category = nvos;
-      state.answers.nvos_category = nvos;
+      answers.nvos_category = nvos;
     }
     if (sites) {
       state.sites_count = sites;
-      state.answers.sites_count = sites;
+      answers.sites_count = sites;
     }
   }
 
@@ -1320,8 +1409,19 @@
   }
 
   function ensureQualificationAnswers() {
-    if (!state.qualification_answers) state.qualification_answers = {};
+    if (!state.qualification_answers || typeof state.qualification_answers !== "object" ||
+        Array.isArray(state.qualification_answers)) {
+      state.qualification_answers = {};
+    }
     return state.qualification_answers;
+  }
+
+  /** Guarantees state.answers is a plain object (restored/partial sessions may omit it). */
+  function ensureAnswers() {
+    if (!state.answers || typeof state.answers !== "object" || Array.isArray(state.answers)) {
+      state.answers = {};
+    }
+    return state.answers;
   }
 
   function saveDocumentQualAnswer(questionId, value) {
@@ -1334,7 +1434,7 @@
     state.qualification_answers = qa;
     if (questionId === "sites_count" || questionId === "eco_sites") {
       state.sites_count = value || "";
-      state.answers.sites_count = value || "";
+      ensureAnswers().sites_count = value || "";
     }
     persist();
   }
@@ -1447,13 +1547,13 @@
   }
 
   function setClarifyAnswer(questionId, value) {
+    var answers = ensureAnswers();
     if (value === "" || value == null || (Array.isArray(value) && value.length === 0)) {
-      delete state.answers[questionId];
+      delete answers[questionId];
       if (state.qualification_answers) delete state.qualification_answers[questionId];
     } else {
-      state.answers[questionId] = value;
-      if (!state.qualification_answers) state.qualification_answers = {};
-      state.qualification_answers[questionId] = value;
+      answers[questionId] = value;
+      ensureQualificationAnswers()[questionId] = value;
     }
     persist();
   }
@@ -1474,21 +1574,20 @@
 
     screen.appendChild(el("h2", "ecoleadbot-title", "Объект на учёте в реестре НВОС?"));
     screen.appendChild(el("p", "ecoleadbot-subtitle",
-      (svc ? "Услуга: " + svc.title + ". " : "") +
+      (svc ? "Услуга: " + escapeHtml(svc.title) + ". " : "") +
       "КЭР требуется для объектов I категории — уточним, есть ли уже постановка на учёт."));
 
     var optionsWrap = el("div", "ecoleadbot-options");
+    var cur = state.document_nvos_registry || ensureQualificationAnswers().nvos_registry_status || "";
     REGISTRY_ON_ACCOUNT_OPTIONS.forEach(function (opt) {
       var card = el("button", "ecoleadbot-card");
       card.type = "button";
-      var cur = state.qualification_answers.ker_on_registry || state.document_nvos_registry || "";
       var isSel = cur === opt;
       if (isSel) card.classList.add("is-selected");
       card.innerHTML =
         '<span class="ecoleadbot-card__check" aria-hidden="true">' + (isSel ? "●" : "") + "</span>" +
         "<span>" + escapeHtml(opt) + "</span>";
       card.addEventListener("click", function () {
-        saveDocumentQualAnswer("ker_on_registry", opt);
         state.document_nvos_registry = opt;
         saveDocumentQualAnswer("nvos_registry_status", opt);
         advanceDocumentBranch("registry");
@@ -1567,11 +1666,12 @@
     screen.appendChild(el("h2", "ecoleadbot-title", "Категория объекта НВОС"));
     if (svc) {
       screen.appendChild(el("p", "ecoleadbot-subtitle",
-        "Услуга: " + svc.title + ". Если не знаете — выберите «Не знаю», уточним при звонке."));
+        "Услуга: " + escapeHtml(svc.title) +
+        ". Если не знаете — выберите «Не знаю», уточним при звонке."));
     }
 
     var optionsWrap = el("div", "ecoleadbot-options");
-    var selected = state.nvos_category || state.answers.nvos_category || "";
+    var selected = state.nvos_category || (state.answers && state.answers.nvos_category) || "";
     NVOS_CATEGORY_OPTIONS.forEach(function (opt) {
       var card = el("button", "ecoleadbot-card");
       card.type = "button";
@@ -1582,7 +1682,7 @@
         "<span>" + escapeHtml(opt) + "</span>";
       card.addEventListener("click", function () {
         state.nvos_category = opt;
-        state.answers.nvos_category = opt;
+        ensureAnswers().nvos_category = opt;
         saveDocumentQualAnswer("nvos_category", opt);
         persist();
         proceedDocumentBranchOrGate("nvos_category");
@@ -1610,7 +1710,7 @@
       "Нужно для оценки объёма работ и подготовки разговора со специалистом."));
 
     var optionsWrap = el("div", "ecoleadbot-options");
-    var selected = state.sites_count || state.answers.sites_count || "";
+    var selected = state.sites_count || (state.answers && state.answers.sites_count) || "";
     SITES_COUNT_OPTIONS.forEach(function (opt) {
       var card = el("button", "ecoleadbot-card");
       card.type = "button";
@@ -1621,7 +1721,7 @@
         "<span>" + escapeHtml(opt) + "</span>";
       card.addEventListener("click", function () {
         state.sites_count = opt;
-        state.answers.sites_count = opt;
+        ensureAnswers().sites_count = opt;
         saveDocumentQualAnswer("sites_count", opt);
         advanceDocumentBranch("sites");
       });
@@ -1799,11 +1899,28 @@
       before_client_terms_screen: "",
       client_terms_answers: {},
       client_terms_ok: false,
-      last_client_gate_id: ""
+      last_client_gate_id: "",
+      /* RAG display flags — backfill for older persisted sessions */
+      rag_answer_html: "",
+      rag_from_template: false,
+      rag_podrobnee_template_key: ""
     };
   }
 
   function ensureV14State(s) {
+    // Core session fields (not only v1.4) — old/partial saves may omit them.
+    if (!s.answers || typeof s.answers !== "object" || Array.isArray(s.answers)) {
+      s.answers = {};
+    }
+    if (!s.contact || typeof s.contact !== "object" || Array.isArray(s.contact)) {
+      s.contact = {};
+    }
+    if (!s.timestamps || typeof s.timestamps !== "object") {
+      s.timestamps = { started_at: isoNow() };
+    } else if (!s.timestamps.started_at) {
+      s.timestamps.started_at = isoNow();
+    }
+
     var defaults = createDefaultV14Fields();
     Object.keys(defaults).forEach(function (k) {
       if (s[k] === undefined) s[k] = defaults[k];
@@ -1839,10 +1956,11 @@
     return out;
   }
 
-  function resetSessionForRetest() {
+  function resetSessionToIntro() {
     var utm = parseUtm();
     var headline = state.headline_variant;
     var ab = state.ab_variant_token;
+    var alreadySubmittedAt = state.already_submitted_at;
     var v14 = createDefaultV14Fields();
     Object.keys(v14).forEach(function (k) { state[k] = v14[k]; });
     state.session_id = makeSessionId();
@@ -1854,9 +1972,13 @@
     state.do_not_call = false;
     state.consent = false;
     state.preferred_contact_method = "phone";
-    state.already_submitted_at = 0;
+    state.timestamps = { started_at: isoNow() };
+    state.popup_closed_at = 0;
+    // UI/quiz state starts fresh, while the production anti-duplicate window remains intact.
+    state.already_submitted_at = alreadySubmittedAt;
     state.rag_question = "";
     state.rag_answer = "";
+    state.rag_answer_html = "";
     state.rag_answer_summary = "";
     state.rag_assistant_recommendation = "";
     state.rag_confidence = "";
@@ -1864,6 +1986,9 @@
     state.rag_sources_titles = [];
     state.rag_es_signal = "";
     state.rag_entry_type = "";
+    state.rag_error_kind = "";
+    state.rag_from_template = false;
+    state.rag_podrobnee_template_key = "";
     state.previous_screen = "";
     state.previous_question_index = null;
     state.current_utm = utm;
@@ -2103,7 +2228,7 @@
   }
 
   function syncMainFlowStateFromAnswers() {
-    var a = state.answers || {};
+    var a = ensureAnswers();
     if (a.activity_type) state.activity_type = a.activity_type;
     else if (a.object_type && !state.activity_type) {
       a.activity_type = a.object_type;
@@ -2115,26 +2240,27 @@
     }
     if (a.nvos_category) state.nvos_category = a.nvos_category;
     if (a.sites_count) state.sites_count = a.sites_count;
-    if (!state.qualification_answers) state.qualification_answers = {};
+    ensureQualificationAnswers();
     getClarifyBlocks(getActiveObjectSignals()).forEach(function (block) {
       if (a[block.id] != null) state.qualification_answers[block.id] = a[block.id];
     });
   }
 
   function syncMainFlowAnswerFields(stepId, value) {
+    var answers = ensureAnswers();
     if (stepId === "activity_type") {
       state.activity_type = value;
-      state.answers.activity_type = value;
-      state.answers.object_type = value;
+      answers.activity_type = value;
+      answers.object_type = value;
     } else if (stepId === "object_signals") {
       state.object_signals = value;
-      state.answers.object_signals = value;
+      answers.object_signals = value;
     } else if (stepId === "nvos_category") {
       state.nvos_category = value;
-      state.answers.nvos_category = value;
+      answers.nvos_category = value;
     } else if (stepId === "sites_count") {
       state.sites_count = value;
-      state.answers.sites_count = value;
+      answers.sites_count = value;
     }
   }
 
@@ -2281,6 +2407,7 @@
 
   function pickRandom(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
+  /** Create element. Third arg goes to innerHTML — escape untrusted/dynamic text with escapeHtml(). */
   function el(tag, className, html) {
     var e = document.createElement(tag);
     if (className) e.className = className;
@@ -2359,6 +2486,43 @@
      5. ANALYTICS (Frontend §36)
      Никаких ПДн в console (Security §44). Пушим только событие + безопасные поля.
      ----------------------------------------------------------------------- */
+  var METRIKA_COUNTER_IDS = [];
+  var METRIKA_GOALS = {
+    widget_opened: "ecoleadbot_widget_opened",
+    quiz_started: "ecoleadbot_quiz_started",
+    mini_result_viewed: "ecoleadbot_mini_result_viewed",
+    contact_form_viewed: "ecoleadbot_contact_form_viewed",
+    lead_submitted: "ecoleadbot_lead_submitted",
+    rag_question_submitted: "ecoleadbot_rag_question_submitted"
+  };
+
+  function addMetrikaCounterId(counterId) {
+    var id = Number(counterId);
+    if (!id || METRIKA_COUNTER_IDS.indexOf(id) !== -1) return;
+    METRIKA_COUNTER_IDS.push(id);
+  }
+
+  function getMetrikaCounterIds() {
+    if (METRIKA_COUNTER_IDS.length) return METRIKA_COUNTER_IDS;
+    try {
+      Object.keys(window).forEach(function (key) {
+        var match = /^yaCounter(\d+)$/.exec(key);
+        if (match) addMetrikaCounterId(match[1]);
+      });
+      // GTM / tag.js sometimes exposes counters only via Ya._metrika
+      if (window.Ya && window.Ya._metrika && window.Ya._metrika.counters) {
+        Object.keys(window.Ya._metrika.counters).forEach(function (key) {
+          addMetrikaCounterId(key);
+        });
+      }
+    } catch (e) { /* Metrika detection must never affect the widget. */ }
+    // Fallback: public counter id from config (ecolusspb.ru = 22994308)
+    if (!METRIKA_COUNTER_IDS.length && ECOLEADBOT_CONFIG.yandexMetrikaCounterId) {
+      addMetrikaCounterId(ECOLEADBOT_CONFIG.yandexMetrikaCounterId);
+    }
+    return METRIKA_COUNTER_IDS;
+  }
+
   function track(event, data) {
     window.dataLayer = window.dataLayer || [];
     var payload = { event: "ecoleadbot_" + event };
@@ -2366,8 +2530,21 @@
       Object.keys(data).forEach(function (k) { payload[k] = data[k]; });
     }
     window.dataLayer.push(payload);
-  }
 
+    var goalName = METRIKA_GOALS[event];
+    if (goalName && typeof window.ym === "function") {
+      var counterIds = getMetrikaCounterIds();
+      if (!counterIds.length && ECOLEADBOT_CONFIG.yandexMetrikaCounterId) {
+        addMetrikaCounterId(ECOLEADBOT_CONFIG.yandexMetrikaCounterId);
+        counterIds = METRIKA_COUNTER_IDS;
+      }
+      counterIds.forEach(function (counterId) {
+        try {
+          window.ym(counterId, "reachGoal", goalName);
+        } catch (e) { /* Metrika failures must never break the widget. */ }
+      });
+    }
+  }
   /* -----------------------------------------------------------------------
      6. SESSION STORAGE (Frontend §17–19, TTL §18 = 180 дней)
      ----------------------------------------------------------------------- */
@@ -2435,6 +2612,7 @@
       entry_page_type: detectPageType(),
       rag_question: "",
       rag_answer: "",
+      rag_answer_html: "",
       rag_answer_summary: "",
       rag_assistant_recommendation: "",
       rag_confidence: "",
@@ -2443,6 +2621,8 @@
       rag_es_signal: "",
       rag_entry_type: "",
       rag_error_kind: "",
+      rag_from_template: false,
+      rag_podrobnee_template_key: "",
       previous_screen: "",
       previous_question_index: null
     };
@@ -2469,8 +2649,11 @@
      8. DOM REFERENCES
      ----------------------------------------------------------------------- */
   var root, widgetBtn, overlay, popup, bodyEl, progressEl, progressFill, progressMeta;
+  var exitBanner = null;
   var autoPopupTimer = null;
   var autoTriggerUsed = false;
+  /** Exit-intent banner is independent of time/scroll autoTriggerUsed. */
+  var exitIntentUsed = false;
 
   /* -----------------------------------------------------------------------
      9. BUILD STATIC DOM
@@ -2502,14 +2685,13 @@
 
     popup = el("div", "ecoleadbot-popup");
 
+    var header = el("div", "ecoleadbot-header");
+    header.appendChild(createWidgetLogoImg("ecoleadbot-header__logo", 36));
     var closeBtn = el("button", "ecoleadbot-close", "×");
     closeBtn.type = "button";
     closeBtn.setAttribute("aria-label", "Закрыть");
     closeBtn.addEventListener("click", closePopup);
-    popup.appendChild(closeBtn);
-
-    var header = el("div", "ecoleadbot-header");
-    header.appendChild(createWidgetLogoImg("ecoleadbot-header__logo", 36));
+    header.appendChild(closeBtn);
     popup.appendChild(header);
 
     progressEl = el("div", "ecoleadbot-progress ecoleadbot-hidden");
@@ -2527,13 +2709,40 @@
     overlay.appendChild(popup);
     root.appendChild(overlay);
 
+    // Exit-intent top banner (desktop): near browser chrome / tab close
+    exitBanner = el("div", "ecoleadbot-exit-banner ecoleadbot-hidden");
+    exitBanner.setAttribute("role", "dialog");
+    exitBanner.setAttribute("aria-label", "Предложение пройти проверку");
+    exitBanner.innerHTML =
+      '<div class="ecoleadbot-exit-banner__accent" aria-hidden="true"></div>' +
+      '<button type="button" class="ecoleadbot-exit-banner__dismiss" aria-label="Закрыть">×</button>' +
+      '<div class="ecoleadbot-exit-banner__title">Уходите? Узнайте за 2 минуты — что нужно по экологии</div>' +
+      '<p class="ecoleadbot-exit-banner__text">Короткий опрос: документы, риски и когда нужен специалист.</p>' +
+      '<button type="button" class="ecoleadbot-exit-banner__cta">Понять, что нужно</button>';
+    exitBanner.querySelector(".ecoleadbot-exit-banner__cta").addEventListener("click", function () {
+      hideExitBanner();
+      openPopup("exit_popup", "exit_intent");
+    });
+    exitBanner.querySelector(".ecoleadbot-exit-banner__dismiss").addEventListener("click", function () {
+      hideExitBanner();
+      track("exit_banner_dismissed");
+    });
+    root.appendChild(exitBanner);
+
     document.body.appendChild(root);
 
     document.addEventListener("keydown", function (e) {
-      if (e.key === "Escape" && !overlay.classList.contains("ecoleadbot-hidden")) closePopup();
+      if (e.key !== "Escape") return;
+      if (overlay && !overlay.classList.contains("ecoleadbot-hidden")) {
+        closePopup();
+        return;
+      }
+      if (typeof isExitBannerVisible === "function" && isExitBannerVisible()) {
+        hideExitBanner();
+        track("exit_banner_dismissed");
+      }
     });
   }
-
   /* -----------------------------------------------------------------------
      10. INLINE CTA (UX §4.2 / Frontend §11–12)
      ----------------------------------------------------------------------- */
@@ -2592,8 +2801,12 @@
   /* -----------------------------------------------------------------------
      11. POPUP OPEN / CLOSE
      ----------------------------------------------------------------------- */
-  function openPopup(entryType, trigger) {
+  function openPopup(entryType, trigger, options) {
+    options = options || {};
+    var shouldResume = options.resume !== false;
     if (overlay && !overlay.classList.contains("ecoleadbot-hidden")) return; // уже открыт
+
+    if (typeof hideExitBanner === "function") hideExitBanner();
 
     // entry_type только из допустимых значений схемы Этапа 4 §6.4
     var allowed = ["floating_widget", "inline_cta", "auto_popup", "exit_popup", "scroll_popup", "direct"];
@@ -2612,7 +2825,18 @@
     if (entryType === "inline_cta") track("inline_cta_clicked");
     track("popup_shown", { trigger: state.popup_trigger });
 
-    routeOnOpen();
+    if (shouldResume) {
+      routeOnOpen();
+    } else {
+      // Auto-open must not surface a saved mid-flow screen. Render only the
+      // current UI as intro, then restore the resumable cursor for persistence.
+      var resumeScreen = state.current_screen;
+      var resumeIndex = state.question_index;
+      renderIntro();
+      state.current_screen = resumeScreen;
+      state.question_index = resumeIndex;
+      persist();
+    }
   }
 
   function closePopup() {
@@ -2624,7 +2848,7 @@
     // cooldown только если не завершено/не отправлено
     if (state.status !== "completed" && !isAlreadySubmitted()) {
       state.popup_closed_at = now();
-      if (state.status === "started" && Object.keys(state.answers).length === 0) {
+      if (state.status === "started" && Object.keys(state.answers || {}).length === 0) {
         // не трогаем статус
       } else if (state.status !== "completed") {
         state.status = "partial";
@@ -2637,23 +2861,44 @@
   /* Куда вести при открытии popup */
   function routeOnOpen() {
     // Session resume (Frontend §19): продолжить с последнего экрана
-    if (state.current_screen === "question" && Object.keys(state.answers).length > 0) {
+    if (state.current_screen === "question" && Object.keys(state.answers || {}).length > 0) {
       migrateLegacyMainAnswers();
       syncMainFlowStateFromAnswers();
       renderQuestion(clampQuestionIndex(state.question_index));
       return;
     }
-    if (state.current_screen === "document_directions") { renderDocumentDirections(); return; }
-    if (state.current_screen === "document_nvos_filter") { renderDocumentNvosFilter(); return; }
-    if (state.current_screen === "document_services") { renderDocumentServices(); return; }
-    if (state.current_screen === "document_registry") { renderDocumentRegistryOnAccount(); return; }
-    if (state.current_screen === "document_nvos_category") { renderDocumentNvosCategory(); return; }
-    if (state.current_screen === "document_sites") { renderDocumentSites(); return; }
-    if (state.current_screen === "document_qualification") { renderDocumentQualification(); return; }
+    if (state.current_screen === "document_directions") {
+      ensureCatalogThen(renderDocumentDirections);
+      return;
+    }
+    if (state.current_screen === "document_nvos_filter") {
+      ensureCatalogThen(renderDocumentNvosFilter);
+      return;
+    }
+    if (state.current_screen === "document_services") {
+      ensureCatalogThen(renderDocumentServices);
+      return;
+    }
+    if (state.current_screen === "document_registry") {
+      ensureCatalogThen(renderDocumentRegistryOnAccount);
+      return;
+    }
+    if (state.current_screen === "document_nvos_category") {
+      ensureCatalogThen(renderDocumentNvosCategory);
+      return;
+    }
+    if (state.current_screen === "document_sites") {
+      ensureCatalogThen(renderDocumentSites);
+      return;
+    }
+    if (state.current_screen === "document_qualification") {
+      ensureCatalogThen(renderDocumentQualification);
+      return;
+    }
     if (state.current_screen === "service_gate") {
       var gateRestore = SERVICE_GATE_DEFS[state.last_service_gate_id];
       if (gateRestore) { renderServiceGate(gateRestore); return; }
-      renderDocumentServices();
+      ensureCatalogThen(renderDocumentServices);
       return;
     }
     if (state.current_screen === "client_gate") {
@@ -2666,11 +2911,18 @@
     if (state.current_screen === "document_error") { renderDocumentCatalogError(); return; }
     if (state.current_screen === "document_interest") {
       state.flow = "document";
-      if (isCatalogReady()) { renderDocumentDirections(); return; }
-      renderDocumentCatalogError();
+      ensureCatalogThen(renderDocumentDirections);
       return;
     }
-    if (state.current_screen === "rag_loading") { renderRagQuestion(); return; }
+    if (state.current_screen === "rag_loading") {
+      /* In-flight fetch does not survive close/reload — re-submit saved question. */
+      if ((state.rag_question || "").trim()) {
+        submitRagQuestion(state.rag_question, state.rag_entry_type || "rag_question");
+      } else {
+        renderRagQuestion();
+      }
+      return;
+    }
     if (state.current_screen === "rag_no_answer") { renderRagNoAnswer(); return; }
     if (state.current_screen === "rag_error") { renderRagTechnicalError(); return; }
     if (state.current_screen === "loading") { renderContact(); return; }
@@ -2691,13 +2943,28 @@
 
     renderIntro();
   }
-
   /* -----------------------------------------------------------------------
      11b. NAVIGATION (Scope Freeze v1.3.2)
      ----------------------------------------------------------------------- */
   function resetFlowToHome() {
     track("flow_reset_home", { session_id: state.session_id });
     renderIntro();
+  }
+
+  /** Wait for catalog JSON (or show error). Avoid blank document screens on resume. */
+  function ensureCatalogThen(onReady) {
+    function run() {
+      if (isCatalogReady()) {
+        onReady();
+        return;
+      }
+      renderDocumentCatalogError();
+    }
+    if (isCatalogReady()) {
+      onReady();
+      return;
+    }
+    loadV14Data().then(run).catch(run);
   }
 
   /* v1.4: ветка «конкретная услуга» — направления и услуги из catalogV14 (фаза 1: навигация). */
@@ -2708,11 +2975,7 @@
     state.document_nvos_registry = "";
     resetQualForDocumentDirectionChange();
     track("document_branch_opened", { session_id: state.session_id });
-    if (!isCatalogReady()) {
-      renderDocumentCatalogError();
-      return;
-    }
-    renderDocumentDirections();
+    ensureCatalogThen(renderDocumentDirections);
   }
 
   function startMainFlow() {
@@ -2729,8 +2992,10 @@
   }
 
   function openRagEntry(entryType) {
+    // Click listeners pass MouseEvent as 1st arg — only accept explicit string entry types.
+    var type = (typeof entryType === "string" && entryType) ? entryType : "question_link";
     state.flow = "rag";
-    state.rag_entry_type = entryType || "question_link";
+    state.rag_entry_type = type;
     track("rag_entry_opened", { session_id: state.session_id, rag_entry_type: state.rag_entry_type });
     renderRagQuestion();
   }
@@ -2986,6 +3251,13 @@
     linkWrap.appendChild(ragLink);
     actions.appendChild(linkWrap);
 
+    var closeLinkWrap = el("div", "ecoleadbot-intro__link-wrap ecoleadbot-intro__close-wrap");
+    var closeLink = el("button", "ecoleadbot-intro__link", "Закрыть");
+    closeLink.type = "button";
+    closeLink.addEventListener("click", closePopup);
+    closeLinkWrap.appendChild(closeLink);
+    actions.appendChild(closeLinkWrap);
+
     introBody.appendChild(actions);
     screen.appendChild(introBody);
 
@@ -3016,6 +3288,16 @@
     ragBtn.type = "button";
     ragBtn.addEventListener("click", openRagEntry);
     actions.appendChild(ragBtn);
+
+    var retryBtn = el("button", "ecoleadbot-btn ecoleadbot-btn--secondary ecoleadbot-btn--block", "Повторить");
+    retryBtn.type = "button";
+    retryBtn.addEventListener("click", openDocumentBranch);
+    actions.appendChild(retryBtn);
+
+    var closeBtn = el("button", "ecoleadbot-btn ecoleadbot-btn--ghost ecoleadbot-btn--block", "Закрыть");
+    closeBtn.type = "button";
+    closeBtn.addEventListener("click", closePopup);
+    actions.appendChild(closeBtn);
 
     screen.appendChild(actions);
     bodyEl.innerHTML = "";
@@ -3265,7 +3547,7 @@
       });
     } else {
       var options = q.id === "activity_type" ? ACTIVITY_TYPE_OPTIONS : (q.options || []);
-      var selected = state.answers[q.id];
+      var selected = ensureAnswers()[q.id];
       options.forEach(function (opt) {
         var card = el("button", "ecoleadbot-card");
         card.type = "button";
@@ -3294,7 +3576,7 @@
       var nextBtn = el("button", "ecoleadbot-btn ecoleadbot-btn--primary ecoleadbot-btn--block", "Далее");
       nextBtn.type = "button";
       nextBtn.addEventListener("click", function () {
-        var sel = q.id === "object_signals" ? state.object_signals : state.answers[q.id];
+        var sel = q.id === "object_signals" ? state.object_signals : ensureAnswers()[q.id];
         if (!Array.isArray(sel) || sel.length === 0) {
           nextBtn.classList.add("is-error");
           multiHint.textContent = "Выберите хотя бы один пункт";
@@ -3342,25 +3624,26 @@
       if (pos === -1) arr.push(signalId); else arr.splice(pos, 1);
     }
     state.object_signals = arr;
-    state.answers.object_signals = arr;
+    ensureAnswers().object_signals = arr;
     persist();
     syncObjectSignalCardsUi(optionsWrap);
   }
 
   function selectSingle(q, opt, index) {
-    state.answers[q.id] = opt;
+    ensureAnswers()[q.id] = opt;
     syncMainFlowAnswerFields(q.id, opt);
     persist();
     advanceFromQuestion(index);
   }
 
   function toggleMultiple(q, opt, optionsWrap) {
-    var arr = Array.isArray(state.answers[q.id]) ? state.answers[q.id].slice() : [];
+    var answers = ensureAnswers();
+    var arr = Array.isArray(answers[q.id]) ? answers[q.id].slice() : [];
     var pos = arr.indexOf(opt);
     if (pos === -1) arr.push(opt); else arr.splice(pos, 1);
-    state.answers[q.id] = arr;
+    answers[q.id] = arr;
     persist();
-    syncOptionCardsUi(optionsWrap, q.id, "multi", state.answers);
+    syncOptionCardsUi(optionsWrap, q.id, "multi", answers);
   }
 
   function advanceFromQuestion(index) {
@@ -3448,7 +3731,7 @@
     return [
       "Пробегитесь по чек-листу — отметьте, что уже есть под рукой",
       "Нажмите «Подробнее» по интересному направлению",
-      "Оставьте контакты — специалист уточнит детали по вашему объекту"
+      "Оставьте контакты для более предметного разговора с нашим специалистом"
     ];
   }
 
@@ -3477,7 +3760,7 @@
       card.appendChild(tags);
     }
 
-    var checklistTitle = el("h4", "ecoleadbot-mini-card__subtitle", "Для подготовки к разговору с нашим специалистом");
+    var checklistTitle = el("h4", "ecoleadbot-mini-card__subtitle", "Для подготовки к разговору с нашим специалистом могут понадобиться:");
     card.appendChild(checklistTitle);
     var checklist = el("ul", "ecoleadbot-mini-card__list");
     buildMiniChecklistItems().forEach(function (item) {
@@ -3551,6 +3834,8 @@
   function openMiniZonePodrobnee(zone) {
     if (!zone) return;
     state.flow = state.flow || "main";
+    state.mini_zone_rag_id = zone.id || "";
+    state.mini_zone_rag_title = zone.title || "";
     state.rag_from_template = false;
     state.rag_answer_html = "";
     state.rag_podrobnee_template_key = "";
@@ -3597,7 +3882,6 @@
     var result = el("div", "ecoleadbot-result");
 
     if (!zones.length) {
-      appendMiniResultValueBlock(screen);
       result.innerHTML = "<p>" + escapeHtml(MINI_RESULT[pickMiniResultType()]) + "</p>";
       screen.appendChild(result);
       appendMiniResultActions(screen);
@@ -3624,12 +3908,16 @@
       result.appendChild(blocks);
     });
   }
-
   /* -----------------------------------------------------------------------
      13b. RAG SCENARIO (Scope Freeze v1.3.1 — третий входной сценарий)
      ----------------------------------------------------------------------- */
   function getRagApiUrl() {
     if (ECOLEADBOT_CONFIG.ragApiUrl) return ECOLEADBOT_CONFIG.ragApiUrl;
+    /* Prefer widget host (elb.ecolusspb.ru), not the embedding page origin. */
+    var base = getAssetBaseUrl();
+    if (base && /^https?:\/\//i.test(base)) {
+      return base.replace(/\/$/, "") + "/api/rag/ask";
+    }
     return location.origin + "/api/rag/ask";
   }
 
@@ -3638,7 +3926,7 @@
     if (t.length <= 320) return t;
     var cut = t.slice(0, 317);
     var dot = cut.lastIndexOf(". ");
-    if (dot > 180) return cut.slice(0, dot + 1).trim();
+    if (dot > 180) return cut.slice(0, dot + 1).trim() + "…";
     var sp = cut.lastIndexOf(" ");
     if (sp > 250) return cut.slice(0, sp).trim() + "…";
     return cut.trim() + "…";
@@ -3653,13 +3941,31 @@
     return parts.join(", ");
   }
 
+  function getRagQuestionForCrm() {
+    if (state.rag_entry_type === "podrobnee") {
+      var title = String(state.mini_zone_rag_title || "").trim();
+      if (title) return "Подробнее: " + title;
+      if (state.rag_from_template) return "Подробнее (мини-оценка)";
+      var q = String(state.rag_question || "").trim();
+      /* Engineered API prompt must not appear as «вопрос пользователя». */
+      if (!q || /^Дай краткий экспертный ответ/i.test(q)) {
+        return "Подробнее (мини-оценка)";
+      }
+      return q;
+    }
+    return String(state.rag_question || "").trim();
+  }
+
   function buildRagCommentBlock() {
-    if (!state.rag_question) return "";
+    if (!state.rag_question && !state.rag_answer && !state.rag_answer_summary) return "";
+    var isPodrobnee = state.rag_entry_type === "podrobnee";
+    var questionLabel = isPodrobnee ? "Запрос «Подробнее»:" : "Вопрос пользователя:";
+    var questionText = getRagQuestionForCrm();
     return [
       "=== Вопрос ассистенту ===",
       "",
-      "Вопрос пользователя:",
-      state.rag_question,
+      questionLabel,
+      questionText || "—",
       "",
       "Краткий ответ ассистента:",
       state.rag_answer_summary || summarizeRagAnswer(state.rag_answer),
@@ -3668,7 +3974,7 @@
       state.rag_assistant_recommendation || "",
       "",
       "Источник перехода:",
-      state.rag_entry_type === "podrobnee" ? "Подробнее (мини-оценка)" : "Ассистент по базе знаний",
+      isPodrobnee ? "Подробнее (мини-оценка)" : "Ассистент по базе знаний",
       "",
       "Возможный сигнал экосопровождения:",
       state.rag_es_signal || "неизвестно"
@@ -3706,7 +4012,7 @@
     if ((state.mini_zones || []).length) pts++;
     if (state.selected_direction) pts++;
     if (state.document_nvos_registry) pts++;
-    if (state.rag_question && state.rag_answer) pts++;
+    if (state.rag_answer) pts++;
     return pts;
   }
 
@@ -3879,8 +4185,8 @@
     blocks.forEach(function (block) {
       var lines = [block.title || ""];
       (block.fields || []).forEach(function (key) {
+        // object_signal_uncertain is covered by object_signals / fieldLine
         if (key === "object_signal_uncertain") return;
-        if (key === "activity_type" || key === "service_title") return;
         var line = fieldLine(key);
         if (line) lines.push(line);
       });
@@ -3891,7 +4197,11 @@
   }
 
   function goToContactFromRag() {
-    state.answers.help_format = "консультация специалиста";
+    var answers = ensureAnswers();
+    /* Keep quiz preference; only default when user never answered help_format. */
+    if (!(answers.help_format || "").trim()) {
+      answers.help_format = "консультация специалиста";
+    }
     if (!state.rag_entry_type) state.rag_entry_type = "rag_question";
     state.previous_screen = state.current_screen || (state.rag_answer ? "rag_answer" : "rag_question");
     persist();
@@ -3902,6 +4212,38 @@
   /* -----------------------------------------------------------------------
      13b2. RAG UI SCREENS
      ----------------------------------------------------------------------- */
+  /** Порог свёртки длинного ответа (символы plain text). */
+  var RAG_ANSWER_COLLAPSE_CHARS = 700;
+
+  /**
+   * Если ответ длинный — свернуть с кнопкой «Показать полностью» / «Свернуть».
+   * Полный текст остаётся в DOM; обрезка только визуальная (CSS max-height).
+   */
+  function mountRagAnswerExpand(screen, answerDiv) {
+    var plain = String(state.rag_answer || answerDiv.textContent || "").trim();
+    if (plain.length <= RAG_ANSWER_COLLAPSE_CHARS) return;
+
+    answerDiv.classList.add("is-collapsed");
+    var toggle = el("button", "ecoleadbot-rag-expand", "Показать полностью");
+    toggle.type = "button";
+    toggle.setAttribute("aria-expanded", "false");
+    toggle.addEventListener("click", function () {
+      var expanded = answerDiv.classList.contains("is-expanded");
+      if (expanded) {
+        answerDiv.classList.remove("is-expanded");
+        answerDiv.classList.add("is-collapsed");
+        toggle.textContent = "Показать полностью";
+        toggle.setAttribute("aria-expanded", "false");
+      } else {
+        answerDiv.classList.remove("is-collapsed");
+        answerDiv.classList.add("is-expanded");
+        toggle.textContent = "Свернуть";
+        toggle.setAttribute("aria-expanded", "true");
+      }
+    });
+    screen.appendChild(toggle);
+  }
+
   function renderRagQuestion() {
     setScreen("rag_question");
     hideProgress();
@@ -3913,7 +4255,7 @@
 
     screen.appendChild(el("h2", "ecoleadbot-title", "Есть вопрос?"));
     screen.appendChild(el("p", "ecoleadbot-subtitle",
-      "Отвечу по базе знаний компании и нормативным документам. " +
+      "Отвечу на основании базы знаний и нормативных документов. " +
       "Если вопрос сложный — предложу консультацию специалиста."));
 
     var field = el("div", "ecoleadbot-field");
@@ -3963,8 +4305,8 @@
   }
 
   function retryRagQuestion() {
-    if (state.rag_entry_type === "podrobnee" && state.rag_question) {
-      submitRagQuestion(state.rag_question, "podrobnee");
+    if ((state.rag_question || "").trim()) {
+      submitRagQuestion(state.rag_question, state.rag_entry_type || "rag_question");
       return;
     }
     renderRagQuestion();
@@ -4041,6 +4383,7 @@
         answerText = maybeAppendKoapToAnswer(answerText, tplKey || "default", data.confidence || "");
       }
       state.rag_answer = answerText;
+      state.rag_answer_html = markdownToDisplayHtml(answerText);
       state.rag_answer_summary = summarizeRagAnswer(state.rag_answer);
       state.rag_assistant_recommendation = data.assistant_recommendation || "";
       state.rag_confidence = data.confidence || "";
@@ -4095,21 +4438,29 @@
     var answerTitle = isPodrobnee
       ? ("Подробнее: " + (state.mini_zone_rag_title || "оценка"))
       : "Ответ";
-    screen.appendChild(el("h2", "ecoleadbot-title", answerTitle));
+    /* escapeHtml: title may include zone name from JSON config via state.mini_zone_rag_title */
+    screen.appendChild(el("h2", "ecoleadbot-title", escapeHtml(answerTitle)));
     var answerDiv = el("div", "ecoleadbot-rag-answer");
+    if (!state.rag_answer_html && state.rag_answer) {
+      state.rag_answer_html = markdownToDisplayHtml(state.rag_answer);
+      persist();
+    }
     if (state.rag_answer_html) {
       answerDiv.innerHTML = state.rag_answer_html;
     } else {
       answerDiv.textContent = state.rag_answer || "";
     }
     screen.appendChild(answerDiv);
+    /* Длинный ответ: свёрнутый превью + «Показать полностью» (вариант C). */
+    mountRagAnswerExpand(screen, answerDiv);
 
     if (state.rag_from_template) {
       var tplNote = el("p", "ecoleadbot-rag-template-note", "Готовый экспертный текст по вашим ответам");
       screen.appendChild(tplNote);
     }
 
-    if (state.rag_sources && state.rag_sources.length) {
+    /* Источники — только test build (?elb_test=1 / localhost); в prod UI не показываем. */
+    if (IS_TEST_BUILD && state.rag_sources && state.rag_sources.length) {
       var sourcesWrap = el("div", "ecoleadbot-rag-sources");
       var sourcesTitle = state.rag_sources.length > 1 ? "Источники:" : "Источник:";
       sourcesWrap.appendChild(el("div", "ecoleadbot-rag-sources__title", sourcesTitle));
@@ -4134,7 +4485,8 @@
       var consultBtn = el("button", "ecoleadbot-btn ecoleadbot-btn--secondary ecoleadbot-btn--block", "Получить консультацию");
       consultBtn.type = "button";
       consultBtn.addEventListener("click", function () {
-        state.answers.help_format = state.answers.help_format || "консультация специалиста";
+        var answers = ensureAnswers();
+        answers.help_format = answers.help_format || "консультация специалиста";
         state.previous_screen = "mini_result";
         state.previous_question_index = clampQuestionIndex(state.question_index);
         persist();
@@ -4297,7 +4649,6 @@
   function renderRagError() {
     renderRagTechnicalError();
   }
-
   /* -----------------------------------------------------------------------
      14. CONTACT VALIDATION (чистая функция, без DOM — тестируется отдельно)
      Правила (Frontend §27–30 + уточнения):
@@ -4373,12 +4724,10 @@
     screen.appendChild(body);
 
     var actions = el("div", "ecoleadbot-intro__actions");
-    if (IS_TEST_BUILD) {
-      var retryBtn = el("button", "ecoleadbot-btn ecoleadbot-btn--secondary ecoleadbot-btn--block", "Пройти заново");
-      retryBtn.type = "button";
-      retryBtn.addEventListener("click", resetSessionForRetest);
-      actions.appendChild(retryBtn);
-    }
+    var retryBtn = el("button", "ecoleadbot-btn ecoleadbot-btn--secondary ecoleadbot-btn--block", "Пройти заново");
+    retryBtn.type = "button";
+    retryBtn.addEventListener("click", resetSessionToIntro);
+    actions.appendChild(retryBtn);
     appendPostSubmitNavActions(actions);
     screen.appendChild(actions);
 
@@ -4396,10 +4745,9 @@
       return;
     }
 
-    if (state.flow === "document" && state.selected_service_id) {
-      state.previous_screen = getDocumentContactPreviousScreen();
-      persist();
-    }
+    /* Do not overwrite previous_screen here: document branch / client_terms
+       already set the correct back target. Forcing "client_terms" broke back
+       when client_terms_ok was already true (skipped the terms screen). */
 
     setScreen("contact");
     hideProgress();
@@ -4630,7 +4978,9 @@
   function buildPayload() {
     syncMainFlowStateFromAnswers();
     syncObjectFieldsFromQual();
-    var a = state.answers;
+    /* Sync may promote/normalize fields on state/answers — persist before webhook. */
+    persist();
+    var a = ensureAnswers();
     var activityType = state.activity_type || a.activity_type || a.object_type || "";
     var signalIds = normalizeObjectSignals(state.object_signals || a.object_signals || []);
     var nvosCategory = resolveNvosCategory();
@@ -4656,19 +5006,22 @@
     if (a.document_interest) answers.document_interest = a.document_interest;
 
     var selectedSvc = state.selected_service_id ? getServiceById(state.selected_service_id) : null;
-    if (state.rag_question) {
-      answers.rag_question = state.rag_question;
+    if (state.rag_question || state.rag_answer) {
+      answers.rag_question = getRagQuestionForCrm() || state.rag_question || "";
       answers.rag_es_signal = state.rag_es_signal || "";
       answers.rag_answer_summary = state.rag_answer_summary || summarizeRagAnswer(state.rag_answer);
       answers.rag_assistant_recommendation = state.rag_assistant_recommendation || "";
       answers.rag_confidence = state.rag_confidence || "";
-      answers.rag_sources_titles = state.rag_sources_titles || [];
+      /* rag_sources_titles — только для test UI; в n8n/Bitrix не отправляем */
       answers.rag_entry_type = state.rag_entry_type || "question_link";
       if (state.rag_entry_type === "podrobnee") {
         answers.rag_podrobnee_zone_id = state.mini_zone_rag_id || "";
         answers.rag_podrobnee_zone_title = state.mini_zone_rag_title || "";
       }
-      answers.help_format = a.help_format || "консультация специалиста";
+      /* Default only when quiz never set help_format (RAG-only entry). */
+      if (!(answers.help_format || "").trim()) {
+        answers.help_format = "консультация специалиста";
+      }
     }
 
     var utm = state.current_utm || {};
@@ -4723,8 +5076,9 @@
       },
       v14: {
         flow: state.flow || "",
-        activity_type: state.activity_type || a.object_type || "",
-        object_signals: state.object_signals || [],
+        activity_type: activityType,
+        /* IDs by contract (scoring-spec): labels live in answers.object_signals */
+        object_signals: signalIds.slice(),
         nvos_category: nvosCategory,
         sites_count: sitesCount,
         main_situation: a.main_situation || "",
@@ -4866,6 +5220,10 @@
     appendFinalMediaLinks(screen);
 
     var actions = el("div", "ecoleadbot-intro__actions");
+    var retryBtn = el("button", "ecoleadbot-btn ecoleadbot-btn--secondary ecoleadbot-btn--block", "Пройти заново");
+    retryBtn.type = "button";
+    retryBtn.addEventListener("click", resetSessionToIntro);
+    actions.appendChild(retryBtn);
     appendPostSubmitNavActions(actions);
     screen.appendChild(actions);
 
@@ -4910,18 +5268,61 @@
   /* -----------------------------------------------------------------------
      17. AUTO POPUP TRIGGERS (UX §5 / Frontend §13–15)
      ----------------------------------------------------------------------- */
+  function isExitBannerVisible() {
+    return !!(exitBanner && !exitBanner.classList.contains("ecoleadbot-hidden") &&
+      exitBanner.classList.contains("is-visible"));
+  }
+
+  function hideExitBanner() {
+    if (!exitBanner) return;
+    exitBanner.classList.remove("is-visible");
+    setTimeout(function () {
+      if (exitBanner) exitBanner.classList.add("ecoleadbot-hidden");
+    }, 220);
+  }
+
+  /**
+   * Top-right exit-intent banner (desktop). Independent of time/scroll triggers.
+   */
+  function showExitBanner() {
+    if (!exitBanner || exitIntentUsed) return;
+    if (!ECOLEADBOT_CONFIG.enableAutoPopup) return;
+    if (inCooldown()) return;
+    if (overlay && !overlay.classList.contains("ecoleadbot-hidden")) return;
+    if (detectDevice() !== "desktop") return;
+
+    exitIntentUsed = true;
+    exitBanner.classList.remove("ecoleadbot-hidden");
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () {
+        if (exitBanner) exitBanner.classList.add("is-visible");
+      });
+    });
+    track("exit_banner_shown", { trigger: "exit_intent" });
+  }
+
   function canAutoOpen() {
     if (!ECOLEADBOT_CONFIG.enableAutoPopup) return false;
     if (autoTriggerUsed) return false;
     if (inCooldown()) return false;
     if (overlay && !overlay.classList.contains("ecoleadbot-hidden")) return false;
+    if (isExitBannerVisible()) return false;
+    return true;
+  }
+
+  function canShowExitIntent() {
+    if (!ECOLEADBOT_CONFIG.enableAutoPopup) return false;
+    if (exitIntentUsed) return false;
+    if (inCooldown()) return false;
+    if (overlay && !overlay.classList.contains("ecoleadbot-hidden")) return false;
+    if (detectDevice() !== "desktop") return false;
     return true;
   }
 
   function setupAutoTriggers() {
     // 1. Time delay
     autoPopupTimer = setTimeout(function () {
-      if (canAutoOpen()) { autoTriggerUsed = true; openPopup("auto_popup", "time_delay"); }
+      if (canAutoOpen()) { autoTriggerUsed = true; openPopup("auto_popup", "time_delay", { resume: false }); }
     }, ECOLEADBOT_CONFIG.popupDelayMs);
 
     // 2. Scroll depth
@@ -4930,20 +5331,18 @@
         Math.max(document.documentElement.scrollHeight, 1);
       if (scrolled >= ECOLEADBOT_CONFIG.scrollDepthTrigger && canAutoOpen()) {
         autoTriggerUsed = true;
-        openPopup("scroll_popup", "scroll_depth");
+        openPopup("scroll_popup", "scroll_depth", { resume: false });
       }
     };
     window.addEventListener("scroll", onScroll, { passive: true });
 
-    // 3. Exit intent (desktop)
+    // 3. Exit intent (desktop) — top banner near tab close, independent of time/scroll
     document.addEventListener("mouseout", function (e) {
-      if (e.clientY <= 0 && !e.relatedTarget && detectDevice() === "desktop" && canAutoOpen()) {
-        autoTriggerUsed = true;
-        openPopup("exit_popup", "exit_intent");
-      }
+      if (e.clientY > 0 || e.relatedTarget) return;
+      if (!canShowExitIntent()) return;
+      showExitBanner();
     });
   }
-
   /* -----------------------------------------------------------------------
      18. INIT
      ----------------------------------------------------------------------- */
@@ -4951,9 +5350,14 @@
     if (window.__ecoleadbotLoaded) return;
     window.__ecoleadbotLoaded = true;
 
+    ensureWidgetStylesheet();
     initState();
     buildDom();
     insertInlineCta();
+    if (shouldOpenFromUrl() && overlay && overlay.classList.contains("ecoleadbot-hidden")) {
+      autoTriggerUsed = true;
+      openPopup("direct", "url_open", { resume: false });
+    }
     setupAutoTriggers();
 
     loadV14Data().then(function () {
@@ -4963,11 +5367,41 @@
     });
 
     window.addEventListener("beforeunload", function () {
+      if (overlay && !overlay.classList.contains("ecoleadbot-hidden")) {
+        state.popup_closed_at = now();
+      }
       if (state && state.status !== "completed" && state.current_screen !== "idle") {
-        if (Object.keys(state.answers).length > 0) state.status = "partial";
+        if (Object.keys(state.answers || {}).length > 0) state.status = "partial";
         persist();
       }
+      if (state && (state.status === "completed" || state.current_screen === "idle")) persist();
     });
+  }
+
+  /* Load only widget CSS on embeds; do not load the demo host stylesheet. */
+  function ensureWidgetStylesheet() {
+    var stylesheetUrl = resolveDataUrl("styles.css");
+    var normalizedTarget;
+    try {
+      normalizedTarget = new URL(stylesheetUrl, document.baseURI).href.split("#")[0].split("?")[0];
+    } catch (e) {
+      normalizedTarget = stylesheetUrl.split("#")[0].split("?")[0];
+    }
+
+    var links = document.querySelectorAll('link[rel="stylesheet"][href]');
+    for (var i = 0; i < links.length; i += 1) {
+      try {
+        var existingUrl = new URL(links[i].getAttribute("href"), document.baseURI).href;
+        existingUrl = existingUrl.split("#")[0].split("?")[0];
+        if (existingUrl === normalizedTarget) return;
+      } catch (e) { /* Ignore malformed unrelated links. */ }
+    }
+
+    var link = document.createElement("link");
+    link.rel = "stylesheet";
+    link.href = stylesheetUrl;
+    link.setAttribute("data-ecoleadbot-styles", "true");
+    (document.head || document.documentElement).appendChild(link);
   }
 
   // Экспорт чистых функций для автотестов (Node). В браузере не мешает.
@@ -4981,6 +5415,7 @@
       IS_TEST_BUILD: IS_TEST_BUILD,
       createDefaultV14Fields: createDefaultV14Fields,
       ensureV14State: ensureV14State,
+      ensureAnswers: ensureAnswers,
       resolveMiniZones: resolveMiniZones,
       mapLegacyObjectFeatures: mapLegacyObjectFeatures,
       getObjectSignalById: getObjectSignalById

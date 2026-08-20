@@ -10,6 +10,9 @@ services:
     environment:
       HOST: 0.0.0.0
       PORT: 8000
+    volumes:
+      # Persist Metrika report idempotency state across rebuilds
+      - ./data/metrika_state:/app/data/metrika_state
     # Только сеть default — поднимается без n8n.
     # Подключение к n8n_default (Caddy → elb) делает deploy/vps_update.sh после up,
     # если сеть уже есть на хосте.

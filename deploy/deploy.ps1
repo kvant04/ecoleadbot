@@ -1,4 +1,4 @@
-# EcoLeadBot — deploy from Windows to VPS via SSH
+﻿# EcoLeadBot вЂ” deploy from Windows to VPS via SSH
 # Run from repo root:
 #   powershell -ExecutionPolicy Bypass -File deploy/deploy.ps1
 #   powershell -ExecutionPolicy Bypass -File deploy/deploy.ps1 -PromptPassword
@@ -7,7 +7,7 @@
 # Password (pick one):
 #   ECOBOT_SSH_PASSWORD in deploy/deploy.config.env  (gitignored)
 #   -PromptPassword  (interactive, not stored)
-#   -SshPassword "..."  (avoid — visible in shell history)
+#   -SshPassword "..."  (avoid вЂ” visible in shell history)
 
 param(
     [string]$SshHost = $env:ECOBOT_SSH_HOST,
@@ -119,7 +119,7 @@ function Invoke-EcoRemoteScp {
         $remoteDir = ($RemotePath -replace '/[^/]+$','')
         if (-not $remoteDir) { $remoteDir = "/tmp" }
         if (-not $remoteDir.EndsWith("/")) { $remoteDir += "/" }
-        # Set-SCPItem загружает в каталог; имя файла берётся с локальной машины.
+        # Set-SCPItem Р·Р°РіСЂСѓР¶Р°РµС‚ РІ РєР°С‚Р°Р»РѕРі; РёРјСЏ С„Р°Р№Р»Р° Р±РµСЂС‘С‚СЃСЏ СЃ Р»РѕРєР°Р»СЊРЅРѕР№ РјР°С€РёРЅС‹.
         Set-SCPItem -ComputerName $SshHost -Port $SshPort -Credential $cred -Path $LocalPath -Destination $remoteDir -AcceptKey -ErrorAction Stop
         $localName = Split-Path -Leaf $LocalPath
         $remoteName = Split-Path -Leaf $RemotePath
@@ -170,10 +170,10 @@ New-Item -ItemType Directory -Path $staging | Out-Null
 
 try {
     $includeItems = @(
-        "app.js", "index.html", "styles.css",
-        "server.py", "rag_service.py", "requirements.txt",
+        "app.js", "embed.js", "index.html", "styles.css", "demo-host.css",
+        "server.py", "rag_service.py", "metrika_report.py", "requirements.txt",
         "Dockerfile", "docker-compose.yml", ".dockerignore",
-        "deploy", "data", "assets", "kb", "prompts"
+        "deploy", "data", "assets", "kb", "prompts", "scripts"
     )
 
     foreach ($item in $includeItems) {
@@ -192,13 +192,25 @@ try {
     }
     function Escape-JsString([string]$value) {
         if ($null -eq $value) { return "" }
-        return ($value -replace '\\', '\\' -replace '"', '\"' -replace "`r", "" -replace "`n", "\n")
+        # Use String.Replace (not -replace): .NET regex replacement is easy to misread;
+        # '\' -> '\\' and '"' -> '\"' for a safe JS double-quoted literal.
+        return $value.Replace('\', '\\').Replace('"', '\"').Replace("`r", "").Replace("`n", '\n')
     }
+    $publicBase = ""
+    if ($env:ECOBOT_DOMAIN) {
+        $publicBase = ("https://" + $env:ECOBOT_DOMAIN.Trim().TrimEnd("/"))
+    }
+    $logoUrl = if ($publicBase) { "$publicBase/assets/logo-eu.png" } else { "" }
+    $ragApiUrl = if ($publicBase) { "$publicBase/api/rag/ask" } else { "" }
+    $assetBaseUrl = if ($publicBase) { "$publicBase/" } else { "" }
     $elbConfig = @(
         "window.ECOLEADBOT_SITE_CONFIG = {"
         ('  webhookUrl: "' + (Escape-JsString $webhookUrl) + '",')
         ('  webhookSecret: "' + (Escape-JsString $webhookSecret) + '",')
-        '  ragApiUrl: ""'
+        ('  ragApiUrl: "' + (Escape-JsString $ragApiUrl) + '",')
+        ('  logoUrl: "' + (Escape-JsString $logoUrl) + '",')
+        ('  assetBaseUrl: "' + (Escape-JsString $assetBaseUrl) + '",')
+        "  yandexMetrikaCounterId: 22994308"
         "};"
     ) -join "`n"
     [System.IO.File]::WriteAllText((Join-Path $staging "elb-config.js"), $elbConfig + "`n", [System.Text.UTF8Encoding]::new($false))
@@ -206,6 +218,20 @@ try {
         Write-Host "Included elb-config.js with webhookSecret (server only)" -ForegroundColor DarkGray
     } else {
         Write-Host "WARN: ECOLEADBOT_WEBHOOK_SECRET empty - n8n Header Auth may reject leads" -ForegroundColor Yellow
+    }
+
+    # Bake current WIDGET_VERSION into embed.js so Bitrix can keep a stable URL.
+    $embedSrc = Join-Path $Root "embed.js"
+    $appJsPath = Join-Path $staging "app.js"
+    if ((Test-Path $embedSrc) -and (Test-Path $appJsPath)) {
+        $appText = [System.IO.File]::ReadAllText($appJsPath)
+        $verMatch = [regex]::Match($appText, 'WIDGET_VERSION\s*=\s*"([^"]+)"')
+        if ($verMatch.Success) {
+            $embedText = [System.IO.File]::ReadAllText($embedSrc)
+            $embedText = [regex]::Replace($embedText, 'var VERSION = "[^"]*";', ('var VERSION = "' + $verMatch.Groups[1].Value + '";'))
+            [System.IO.File]::WriteAllText((Join-Path $staging "embed.js"), $embedText, [System.Text.UTF8Encoding]::new($false))
+            Write-Host ("Included embed.js with VERSION " + $verMatch.Groups[1].Value) -ForegroundColor DarkGray
+        }
     }
 
     # Shell scripts must use LF on Linux VPS (Windows CRLF breaks bash).
@@ -228,7 +254,7 @@ try {
         Write-Host "Included .env in archive (stays on server only)" -ForegroundColor DarkGray
     }
 
-    $archive = Join-Path $env:TEMP "ecoleadbot_deploy.tar.gz"
+    $archive = Join-Path $env:TEMP ("ecoleadbot_deploy_" + [guid]::NewGuid().ToString("n") + ".tar.gz")
     if (Test-Path $archive) { Remove-Item -Force $archive }
     & tar -czf $archive -C $staging .
 
@@ -272,3 +298,4 @@ finally {
     if (Test-Path $staging) { Remove-Item -Recurse -Force $staging -ErrorAction SilentlyContinue }
     $SshPassword = $null
 }
+

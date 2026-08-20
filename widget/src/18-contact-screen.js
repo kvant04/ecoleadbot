@@ -18,12 +18,10 @@
     screen.appendChild(body);
 
     var actions = el("div", "ecoleadbot-intro__actions");
-    if (IS_TEST_BUILD) {
-      var retryBtn = el("button", "ecoleadbot-btn ecoleadbot-btn--secondary ecoleadbot-btn--block", "Пройти заново");
-      retryBtn.type = "button";
-      retryBtn.addEventListener("click", resetSessionForRetest);
-      actions.appendChild(retryBtn);
-    }
+    var retryBtn = el("button", "ecoleadbot-btn ecoleadbot-btn--secondary ecoleadbot-btn--block", "Пройти заново");
+    retryBtn.type = "button";
+    retryBtn.addEventListener("click", resetSessionToIntro);
+    actions.appendChild(retryBtn);
     appendPostSubmitNavActions(actions);
     screen.appendChild(actions);
 
@@ -41,10 +39,9 @@
       return;
     }
 
-    if (state.flow === "document" && state.selected_service_id) {
-      state.previous_screen = getDocumentContactPreviousScreen();
-      persist();
-    }
+    /* Do not overwrite previous_screen here: document branch / client_terms
+       already set the correct back target. Forcing "client_terms" broke back
+       when client_terms_ok was already true (skipped the terms screen). */
 
     setScreen("contact");
     hideProgress();

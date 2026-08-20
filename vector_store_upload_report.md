@@ -1,46 +1,47 @@
 # Отчёт загрузки EcoLeadBot KB в OpenAI Vector Store
 
-**Дата:** 2026-06-11
+**Дата:** 2026-07-24
 **Vector Store:** EcoLeadBot RAG KB v1.0
 **vector_store_id:** `vs_6a2ac9effa28819182feb2834e04428f`
-**Загружено файлов:** 30
-**Completed:** 30
-**Итог:** OK
+**Загружено файлов (в store):** 30
+**Новых файлов в этом запуске:** 29
+**Completed:** 29
+**Итог:** REQUIRES REVIEW
 
 ## Файлы в Vector Store
 
 | Файл | VS file id | Статус |
 |---|---|---|
-| `007-FZ-ohrane-okruzhayuschey-sredy.md` | `file-5RLu7fqHGwRKEFkNDGvu3B` | completed |
-| `074-Kodeks-vodnyy-kodeks-rossiyskoy-federacii.md` | `file-2Rs8tg8JZky7iBhVtGhoJQ` | completed |
-| `089-FZ-othodah-proizvodstva-potrebleniya.md` | `file-FhDKynEMWEc7ZxT4zE7jWw` | completed |
-| `096-FZ-ohrane-atmosfernogo-vozduha.md` | `file-V6wtb8nQnXtPh6p8jJH2Cn` | completed |
-| `1028-PR-Minprirody-utverzhdenii-poryadka-ucheta-oblasti-obrascheniya-othodami.md` | `file-LBLkG8aQyUfAx21KEhUMiD` | completed |
-| `1043-PR-Minprirody-utverzhdenii-poryadka-predostavleniya-deklaracii-plate-za.md` | `file-5ecpPUdyMvW5NppB5Zpnd1` | completed |
-| `109-PR-Minprirody-trebovaniya-soderzhaniyu-programmy-pek.md` | `file-4pfECuSJCyaW5otNf2FqyV` | completed |
-| `117-PR-Minprirody-utverzhdenii-formy-deklaracii-vozdeystvii-okruzhayuschuyu-sredu.md` | `file-MMGRcXnFXfyr4SduEGYTou` | completed |
-| `1200-03-SanPiN-sanitarno-zaschitnye-zony-sanitarnaya-klassifikaciya-predpriyatiy.md` | `file-ATiDibj2EXA1SsTJCVhM39` | completed |
-| `1322-03-SanPiN-gigienicheskie-trebovaniya-razmescheniyu-obezvrezhivaniyu-othodov-proizvodstva.md` | `file-Lz4iZzMfixnrC47EKayf5s` | completed |
-| `173-PR-Minprirody-utverzhdenii-formy-otcheta-organizacii-rezultatah-osuschestvleniya.md` | `file-MqgBSnyFAwviy5oCbmVadX` | completed |
-| `2398-PP-utverzhdenii-kriteriev-otneseniya-obektov-okazyvayuschih-nvos.md` | `file-RtiYkLedy4C7GvAov125dH` | completed |
-| `241-PR-Minprirody-deklaraciya-plate-za-negativnoe-vozdeystvie-okruzhayuschuyu.md` | `file-3Tn1kGqaL23QXYTKn3E4sk` | completed |
-| `242-PR-RPN-utverzhdenii-federalnogo-klassifikacionnogo-kataloga-othodov-fkko.md` | `file-4hhNTcCuww2Ajyvm91eakt` | completed |
-| `248-FZ-gosudarstvennom-kontrole-nadzore-municipalnom-kontrole-rossiyskoy.md` | `file-J3626nSdBrFmP6xSyb8pjm` | completed |
-| `262-PR-Minprirody-trebovaniya-soderzhaniyu-programmy-pek.md` | `file-17jfRfPvbtUBvzZkr5DeAf` | completed |
-| `416-FZ-vodosnabzhenii-vodootvedenii.md` | `file-PaVfyEQEHtajMSJAxUZisQ` | completed |
-| `445-PR-Rosstat-utverzhdenii-formy-federalnogo-statisticheskogo-nablyudeniya-tp.md` | `file-AL6k6Ph5jHWyEuwjMQup5W` | completed |
-| `581-PR-Minprirody-utverzhdenii-metodiki-razrabotki-rascheta-ustanovleniya-ndv.md` | `file-N81i11pCYsxoXHWbkuJ89R` | completed |
-| `614-PR-Rosstat-utverzhdenii-formy-federalnogo-statisticheskogo-nablyudeniya-tp.md` | `file-3ctEY7of5RfKLuuZrfVrw2` | completed |
-| `652-PR-Minprirody-utverzhdenii-poryadka-predostavleniya-prognoza-nmu.md` | `file-X14cs6h44GDrRbtoY1QqRP` | completed |
-| `661-PR-Rosstat-utverzhdenii-formy-federalnogo-statisticheskogo-nablyudeniya-forma.md` | `file-TBNt9fzSx1ChmhMqvJMnHz` | completed |
-| `662-PR-Minprirody-utverzhdenii-trebovaniy-planu-meropriyatiy-snizheniyu-vybrosov.md` | `file-D7HkqvvF9uMHaRnywWc2Hy` | completed |
-| `871-PR-Minprirody-utverzhdenii-poryadka-provedeniya-inventarizacii-stacionarnyh-istochnikov.md` | `file-W4DarUgXJcX2WtH3QSNjMX` | completed |
-| `913-PP-stavkah-platy-za-negativnoe-vozdeystvie-okruzhayuschuyu.md` | `file-CWYeP5j67WDFaa1yC7ma1D` | completed |
-| `FAQ-ekoleadbot-voprosy-i-otvety-po-ekologii.md` | `file-Mk2N6BAJiR99ZoMUKPPrUV` | completed |
-| `NVOS-Ref-perechni-dokumentacii-po-kategoriyam-obektov-nvos.md` | `file-N7Zh5whCN1rrWUH9DeGrPz` | completed |
-| `company_profile.md` | `file-2ptKkqWdNi47BZ5tLSwUt3` | completed |
-| `koap_eco.md` | `file-BXJrMEoQ493DmKLQF1kNEP` | completed |
-| `services.md` | `file-B98p9GiNbXVCqVqbZLoRsi` | completed |
+| `007-FZ-ohrane-okruzhayuschey-sredy.md` | `file-BQWkPP4PBuNdhGC69XjTJ4` | completed |
+| `074-Kodeks-vodnyy-kodeks-rossiyskoy-federacii.md` | `file-L5mA8akSouSXqfYx6XbKQp` | completed |
+| `089-FZ-othodah-proizvodstva-potrebleniya.md` | `file-Cbr8J58oS8xgPoQFoxv796` | completed |
+| `096-FZ-ohrane-atmosfernogo-vozduha.md` | `file-2j7MeLTf4i2zNExtAAqak6` | completed |
+| `1028-PR-Minprirody-utverzhdenii-poryadka-ucheta-oblasti-obrascheniya-othodami.md` | `file-H3zPgHyAPEAP3vLR2GRKFr` | completed |
+| `1043-PR-Minprirody-utverzhdenii-poryadka-predostavleniya-deklaracii-plate-za.md` | `file-8jRWkcgcPsgV8Aa4HsV1ps` | completed |
+| `109-PR-Minprirody-trebovaniya-soderzhaniyu-programmy-pek.md` | `file-HsoTxXeKHmW8jAHZfC6SaX` | completed |
+| `117-PR-Minprirody-utverzhdenii-formy-deklaracii-vozdeystvii-okruzhayuschuyu-sredu.md` | `file-P62wp6YJwkhZ6oo4uyz3WC` | completed |
+| `1200-03-SanPiN-sanitarno-zaschitnye-zony-sanitarnaya-klassifikaciya-predpriyatiy.md` | `file-QqSUBGC8ybyHP4d6WmEqYE` | completed |
+| `1322-03-SanPiN-gigienicheskie-trebovaniya-razmescheniyu-obezvrezhivaniyu-othodov-proizvodstva.md` | `file-TUyCZhMz6RNYVZXjHM5FV9` | completed |
+| `173-PR-Minprirody-utverzhdenii-formy-otcheta-organizacii-rezultatah-osuschestvleniya.md` | `file-6dnbpRCryzPkaco727huC9` | completed |
+| `2398-PP-utverzhdenii-kriteriev-otneseniya-obektov-okazyvayuschih-nvos.md` | `file-LFgk3C3vxtTReTvsVvt1ub` | completed |
+| `241-PR-Minprirody-deklaraciya-plate-za-negativnoe-vozdeystvie-okruzhayuschuyu.md` | `file-YEChci3BTwWrEwvwrc6532` | completed |
+| `242-PR-RPN-utverzhdenii-federalnogo-klassifikacionnogo-kataloga-othodov-fkko.md` | `file-JgoNZhSgzjC7t5RvRvAZcb` | completed |
+| `248-FZ-gosudarstvennom-kontrole-nadzore-municipalnom-kontrole-rossiyskoy.md` | `file-4Yeyfv7sb6odsDm3hWfC5x` | completed |
+| `262-PR-Minprirody-trebovaniya-soderzhaniyu-programmy-pek.md` | `file-1sLtZwdVNVUEcGXwK6e9cG` | completed |
+| `416-FZ-vodosnabzhenii-vodootvedenii.md` | `file-SiZoMzxph7HzmW3MupmRP9` | failed |
+| `445-PR-Rosstat-utverzhdenii-formy-federalnogo-statisticheskogo-nablyudeniya-tp.md` | `file-HVqpTWpsNF6QWjH5yPyjDW` | completed |
+| `581-PR-Minprirody-utverzhdenii-metodiki-razrabotki-rascheta-ustanovleniya-ndv.md` | `file-QboSAL63HkNcSgHGVoeyoC` | completed |
+| `614-PR-Rosstat-utverzhdenii-formy-federalnogo-statisticheskogo-nablyudeniya-tp.md` | `file-JNmJHzbHqjArGQbmLL8iHU` | completed |
+| `652-PR-Minprirody-utverzhdenii-poryadka-predostavleniya-prognoza-nmu.md` | `file-6WYhSScLvj37qCYamRBeqU` | completed |
+| `661-PR-Rosstat-utverzhdenii-formy-federalnogo-statisticheskogo-nablyudeniya-forma.md` | `file-Gx7isjARosmzyX1h9AMJTD` | completed |
+| `662-PR-Minprirody-utverzhdenii-trebovaniy-planu-meropriyatiy-snizheniyu-vybrosov.md` | `file-R2jMQeKAdhPrJwRp2tCqCT` | completed |
+| `871-PR-Minprirody-utverzhdenii-poryadka-provedeniya-inventarizacii-stacionarnyh-istochnikov.md` | `file-PxuVJPJz24M8imwhhusyf6` | completed |
+| `913-PP-stavkah-platy-za-negativnoe-vozdeystvie-okruzhayuschuyu.md` | `file-RLVxhs4Xwm47H9fcUgEnbd` | completed |
+| `FAQ-ekoleadbot-voprosy-i-otvety-po-ekologii.md` | `file-5829hSFfCLUx3V94xAhcXW` | completed |
+| `NVOS-Ref-perechni-dokumentacii-po-kategoriyam-obektov-nvos.md` | `file-Qopp9jBKmmFN4mjXrh6Gsy` | completed |
+| `company_profile.md` | `file-EUNrg77nDWunZH9MHWgRfS` | completed |
+| `koap_eco.md` | `file-M8FTtNaW5DvUhSq5MXF5FU` | completed |
+| `services.md` | `file-QZEkN2n5W1vSE2EzgaSExG` | completed |
 
 ## Локальные файлы (kb/*.md)
 
@@ -75,8 +76,13 @@
 - `NVOS-Ref-perechni-dokumentacii-po-kategoriyam-obektov-nvos.md`
 - `services.md`
 
+## Ошибки
+
+- FAQ-ekoleadbot-voprosy-i-otvety-po-ekologii.md: failed — LastError(code='server_error', message='An internal error occurred.')
+
 ## Следующие шаги
 
 1. Добавьте в `.env`: `OPENAI_VECTOR_STORE_ID=vs_6a2ac9effa28819182feb2834e04428f`
 2. Подключите Vector Store к EcoLeadBot RAG Assistant в OpenAI Platform.
-3. Прогоните `evaluation/evaluation_set.md` для проверки retrieval.
+3. После правок `kb/*.md` перезаливайте: `python scripts/upload_kb_to_openai_vector_store.py --force`
+4. Прогоните `python evaluation_rerun_after_fixes.py` для быстрой проверки.

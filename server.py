@@ -12,8 +12,10 @@ from __future__ import annotations
 import logging
 import os
 import time
+import asyncio
 from collections import defaultdict, deque
 from contextlib import asynccontextmanager
+from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Literal
 
@@ -25,6 +27,7 @@ from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel, Field
 
 from rag_service import ask_rag, close_openai_client
+from metrika_report import next_cycle_report_at, run_due_cycle_reports, run_weekly_report_job
 
 ROOT = Path(__file__).resolve().parent
 load_dotenv(ROOT / ".env")
@@ -39,12 +42,65 @@ _RAG_VALIDATION_REASONS = frozenset({"empty_question", "too_long"})
 _RAG_CONFIG_REASONS = frozenset({"missing_vector_store_id", "missing_api_key"})
 
 
+def _next_metrika_report_at(now: datetime) -> datetime:
+    """Return the next configured weekly report time in local server time."""
+    try:
+        weekday = int(os.getenv("METRIKA_REPORT_WEEKDAY", "0"))
+        hour = int(os.getenv("METRIKA_REPORT_HOUR", "9"))
+        if not 0 <= weekday <= 6 or not 0 <= hour <= 23:
+            raise ValueError
+    except ValueError:
+        logger.warning("Invalid Metrika schedule configuration; using Monday 09:00")
+        weekday, hour = 0, 9
+    candidate = now.replace(hour=hour, minute=0, second=0, microsecond=0)
+    days_ahead = (weekday - now.weekday()) % 7
+    if days_ahead == 0 and candidate <= now:
+        days_ahead = 7
+    return candidate + timedelta(days=days_ahead)
+
+
+async def _metrika_scheduler_loop() -> None:
+    """Run startup backfills, then wait for weekly and cycle slots."""
+    await asyncio.to_thread(run_due_cycle_reports)
+    while True:
+        try:
+            now = datetime.now()
+            next_weekly = _next_metrika_report_at(now)
+            next_cycle = next_cycle_report_at(now)
+            next_run = min(next_weekly, next_cycle) if next_cycle else next_weekly
+            delay = max(1.0, (next_run - now).total_seconds())
+            logger.info("Next Metrika report scheduled at %s", next_run.isoformat(timespec="minutes"))
+            await asyncio.sleep(delay)
+            woke_at = datetime.now()
+            if next_weekly <= woke_at:
+                await asyncio.to_thread(run_weekly_report_job)
+            await asyncio.to_thread(run_due_cycle_reports, woke_at)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            logger.exception("Metrika scheduler iteration failed; continuing")
+
+
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     logger.info("EcoLeadBot API starting")
-    yield
-    close_openai_client()
-    logger.info("EcoLeadBot API stopped")
+    metrika_task: asyncio.Task[None] | None = None
+    if os.getenv("YANDEX_METRIKA_TOKEN", "").strip():
+        metrika_task = asyncio.create_task(_metrika_scheduler_loop())
+        logger.info("Metrika report scheduler started")
+    else:
+        logger.info("Metrika weekly report scheduler skipped: token is not configured")
+    try:
+        yield
+    finally:
+        if metrika_task is not None:
+            metrika_task.cancel()
+            try:
+                await metrika_task
+            except asyncio.CancelledError:
+                logger.info("Metrika weekly report scheduler stopped")
+        close_openai_client()
+        logger.info("EcoLeadBot API stopped")
 
 
 app = FastAPI(title="EcoLeadBot", version="1.4.0", lifespan=lifespan)
@@ -178,6 +234,22 @@ def index_page():
 @app.get("/app.js")
 def app_js():
     return FileResponse(ROOT / "app.js", media_type="application/javascript")
+
+
+@app.get("/embed.js")
+def embed_js():
+    """Stable Bitrix entrypoint: injects versioned CSS/config/app.js."""
+    target = ROOT / "embed.js"
+    if not target.is_file():
+        raise HTTPException(status_code=404, detail="Not found")
+    # Short cache so Bitrix can keep a stable URL without ?v=, but still pick up new VERSION.
+    return FileResponse(
+        target,
+        media_type="application/javascript",
+        headers={
+            "Cache-Control": "public, max-age=60, must-revalidate",
+        },
+    )
 
 
 @app.get("/elb-config.js")

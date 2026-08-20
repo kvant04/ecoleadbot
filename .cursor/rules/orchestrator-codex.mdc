@@ -1,0 +1,24 @@
+---
+description: Orchestrator/Codex workflow — plan first, Codex codes, Cursor reviews
+alwaysApply: true
+---
+
+# EcoLeadBot: Cursor = orchestrator/reviewer, Codex = coder
+
+## Mandatory workflow
+
+1. **Plan first.** Never start coding a non-trivial change without a written masterplan.
+2. **Cursor (this agent)** writes prompts and reviews reports. Cursor does **not** directly edit application code for planned tasks when Codex is available.
+3. **Codex** applies code changes. Cursor launches Codex via the terminal (user grants permissions).
+4. Loop:
+   - Write prompt → `dev documentation/codex/prompts/NNN-task.md`
+   - Run Codex with that prompt
+   - Codex writes report → `dev documentation/codex/reports/NNN-task.md`
+   - Cursor reviews the report; if incomplete, write the next prompt and repeat
+5. Follow the active unified masterplan: `dev documentation/codex/MASTERPLAN.md` (step order).
+6. After a successful step batch: build widget (`py scripts/build_widget.py`), deploy if user expects it, bump `WIDGET_VERSION`.
+
+## Exceptions
+
+- Tiny clarifications / reading files for planning: Cursor may use tools freely.
+- If Codex is unavailable, ask the user before Cursor edits code itself.
