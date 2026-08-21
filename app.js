@@ -52,7 +52,7 @@
   }
 
   var STORAGE_KEY = "ecoleadbot_session";
-  var WIDGET_VERSION = "1.5.50";
+  var WIDGET_VERSION = "1.5.51";
 
   /* Тестовая сборка: ?elb_test=1 или localhost / GitHub Pages demo.
      В test build отключена anti-duplicate; кнопка «Пройти заново» доступна во всех сборках. */
@@ -5100,7 +5100,7 @@
         document_nvos_registry: state.document_nvos_registry || "",
         prefill: state.prefill || {},
         es_scoring: esScoring,
-        bitrix_comment: bitrixBlock,
+        bitrix_comment: mergedComment,
         rag_error_kind: state.rag_error_kind || ""
       }
     };
@@ -5186,7 +5186,6 @@
       });
     });
   }
-
   /* -----------------------------------------------------------------------
      16. LOADING / FINAL / ERROR / ALREADY SUBMITTED
      ----------------------------------------------------------------------- */

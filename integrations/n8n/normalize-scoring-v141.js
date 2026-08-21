@@ -38,7 +38,7 @@ const esScoring = v14.es_scoring || {};
 const esStatus = esScoring.status || "";
 const esStatusLabel = esScoring.status_label || "";
 const qualAnswers = v14.qualification_answers || answers.qualification_answers || {};
-const bitrixComment = v14.bitrix_comment || contact.comment || "";
+const bitrixComment = contact.comment || v14.bitrix_comment || "";
 const ragEsSignal = String(answers.rag_es_signal || "").toLowerCase();
 
 const miniZoneIds = Array.isArray(v14.mini_zone_ids)

@@ -126,7 +126,7 @@
         document_nvos_registry: state.document_nvos_registry || "",
         prefill: state.prefill || {},
         es_scoring: esScoring,
-        bitrix_comment: bitrixBlock,
+        bitrix_comment: mergedComment,
         rag_error_kind: state.rag_error_kind || ""
       }
     };
@@ -212,4 +212,3 @@
       });
     });
   }
-

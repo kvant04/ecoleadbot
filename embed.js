@@ -12,7 +12,7 @@
   if (window.__ecoleadbotEmbedLoaded) return;
   window.__ecoleadbotEmbedLoaded = true;
 
-  var VERSION = "1.5.50";
+  var VERSION = "1.5.51";
   var base = "https://elb.ecolusspb.ru/";
   try {
     var current = document.currentScript;
