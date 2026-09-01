@@ -49,3 +49,7 @@ intersections_*
 # Runtime state отчётов Метрики (живёт на VPS)
 data/metrika_state/
 data/metrika_report_state.json
+
+# Temporary KB conversion batch (local only)
+raw_batch_sep2026/
+

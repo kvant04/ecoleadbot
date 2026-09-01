@@ -39,7 +39,7 @@
   }
 
   var STORAGE_KEY = "ecoleadbot_session";
-  var WIDGET_VERSION = "1.5.51";
+  var WIDGET_VERSION = "1.5.52";
 
   /* Тестовая сборка: ?elb_test=1 или localhost / GitHub Pages demo.
      В test build отключена anti-duplicate; кнопка «Пройти заново» доступна во всех сборках. */

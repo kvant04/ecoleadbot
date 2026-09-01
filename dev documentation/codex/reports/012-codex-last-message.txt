@@ -1,0 +1,10 @@
+Готово.
+
+- Исправлен classic `yaCounter22994308.reachGoal` с XOR-приоритетом над modern API.
+- Добавлены pending queue, 3 retry через 500/1000/1500 мс и dedupe.
+- Обновлена версия до `1.5.52`.
+- Пересобран `app.js`; `embed.js` обновлён до `1.5.52`.
+- Проверки `node --check` и `git diff --check` пройдены.
+- Commit, deploy и SMTP не выполнялись.
+
+Отчёт: [012-metrika-classic-reachgoal.md](<D:/ELB c ИИ RAG для выпускного проекта/dev documentation/codex/reports/012-metrika-classic-reachgoal.md>)
